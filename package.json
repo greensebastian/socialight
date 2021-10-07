@@ -1,0 +1,34 @@
+{
+  "name": "socialight",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "nodemon --watch './**/*.ts' --exec ts-node app.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/greensebastian/socialight.git"
+  },
+  "author": "Sebastian Green",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/greensebastian/socialight/issues"
+  },
+  "homepage": "https://github.com/greensebastian/socialight#readme",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.33.0",
+    "@typescript-eslint/parser": "^4.33.0",
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.24.2",
+    "nodemon": "^2.0.13",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3"
+  },
+  "dependencies": {
+    "@slack/bolt": "^3.7.0",
+    "dotenv": "^10.0.0"
+  }
+}
