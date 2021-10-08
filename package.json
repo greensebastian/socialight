@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "nodemon --watch './**/*.ts' --exec ts-node app.ts"
+    "watch": "nodemon --watch './**/*.ts' --exec ts-node src/app.ts --inspect",
+    "start": "node -r ts-node/register src/app.ts",
+    "inspect": "node --inspect -r ts-node/register src/app.ts"
   },
   "repository": {
     "type": "git",
@@ -22,6 +24,7 @@
     "@typescript-eslint/parser": "^4.33.0",
     "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-import-resolver-typescript": "^2.5.0",
     "eslint-plugin-import": "^2.24.2",
     "nodemon": "^2.0.13",
     "ts-node": "^10.2.1",
@@ -29,6 +32,9 @@
   },
   "dependencies": {
     "@slack/bolt": "^3.7.0",
-    "dotenv": "^10.0.0"
+    "@slack/web-api": "^6.4.0",
+    "dotenv": "^10.0.0",
+    "inversify": "^5.1.1",
+    "reflect-metadata": "^0.1.13"
   }
 }
