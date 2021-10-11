@@ -1,6 +1,7 @@
 import { App } from '@slack/bolt';
+import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse';
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
-import ConfigRepository from './configProvider';
+import ConfigRepository from '@repositories/configRepository';
 
 class SlackRepository {
   private configProvider: ConfigRepository;
@@ -8,6 +9,8 @@ class SlackRepository {
   private slack: App;
 
   private cachedUsers = new Map<string, User>();
+
+  private cachedChannels = new Map<string, Channel>()
 
   constructor(configProvider: ConfigRepository, slack: App) {
     this.configProvider = configProvider;
@@ -24,13 +27,32 @@ class SlackRepository {
     const announcementsChannel = conversationsResponse.channels!
       .find((channel) => channel.name === config.announcementsChannel);
 
+    for(let channel of poolChannels){
+      this.cachedChannels.set(channel.id!, channel);
+    }
+
     return { poolChannels, announcementsChannel };
+  }
+
+  async getChannel(channelName: string){
+    channelName = channelName.toLowerCase();
+    const config = await this.configProvider.getConfig();
+    if (!config.poolChannels.includes(channelName)) return;
+
+    const cachedChannel = Array.from(this.cachedChannels.values()).find(channel => channel.name?.toLowerCase() === channelName);
+    if (cachedChannel){
+      return cachedChannel;
+    }
+    else {
+      const channels = await this.getChannels();
+      return channels.poolChannels.find(channel => channel.name?.toLowerCase() === channelName);
+    }
   }
 
   async getUsersInChannel(channelId: string) {
     const userIds = await this.getChannelMemberIds(channelId);
 
-    return this.getUsersDetails(Array.from(userIds));
+    return Array.from(userIds);
   }
 
   private async getChannelMemberIds(channelId: string) {
@@ -51,8 +73,17 @@ class SlackRepository {
     return memberIds;
   }
 
-  private async getUsersDetails(userIds: string[]) {
-    const nonCachedUserIds = userIds.filter((id) => !this.cachedUsers.has(id));
+  async getUsersDetails(userIds: string[]) {
+    const nonCachedUserIds: string[] = [];
+    const cachedUserIds: string[] = [];
+    for(let userId of userIds){
+      if (this.cachedUsers.has(userId)){
+        cachedUserIds.push(userId);
+      }
+      else {
+        nonCachedUserIds.push(userId);
+      }
+    }
 
     const userDetailsResponse = await Promise.all(nonCachedUserIds.map((userId) => this.slack.client
       .users.info({ user: userId })));
@@ -64,7 +95,7 @@ class SlackRepository {
       this.cachedUsers.set(user.id!, user);
     });
 
-    return userDetails;
+    return userDetails.concat(cachedUserIds.map(id => this.cachedUsers.get(id)!));
   }
 }
 

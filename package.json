@@ -33,6 +33,7 @@
   "dependencies": {
     "@slack/bolt": "^3.7.0",
     "@slack/web-api": "^6.4.0",
+    "dayjs": "^1.10.7",
     "dotenv": "^10.0.0",
     "inversify": "^5.1.1",
     "reflect-metadata": "^0.1.13"

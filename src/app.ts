@@ -1,7 +1,11 @@
 import { App } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
-import ConfigRepository from './repositories/configProvider';
 import SlackRepository from './repositories/slackRepository';
+import ConfigRepository from './repositories/configRepository';
+import StateRepository from './repositories/stateRepository';
+import DateService from './services/dateService';
+import PlanningService from './services/planningService';
+import RandomService from './services/randomService';
 
 configDotenv();
 
@@ -15,6 +19,14 @@ const slack = new App({
 const configRepository = new ConfigRepository();
 
 const slackRepository = new SlackRepository(configRepository, slack);
+
+const stateRepository = new StateRepository();
+
+const dateService = new DateService();
+
+const randomService = new RandomService();
+
+const planningService = new PlanningService(stateRepository, dateService, randomService, slackRepository, configRepository);
 
 slack.message(async ({ message, say }) => {
   if (message.channel_type !== 'im') return;
@@ -32,13 +44,24 @@ slack.message(async ({ message, say }) => {
     const channels = await slackRepository.getChannels();
     const firstChannel = channels.poolChannels[0];
     const users = await slackRepository.getUsersInChannel(firstChannel.id!);
+    const userDetails = await slackRepository.getUsersDetails(users);
+    console.log(userDetails);
 
-    console.log(users);
-
-    say(`Found ${users.length} users in ${firstChannel.name}: ${users.map((user) => user.real_name).join(', ')}.`);
+    say(`Found ${userDetails.length} users in ${firstChannel.name}: ${userDetails.map((user) => user.real_name).join(', ')}.`);
   } else if (t.toLowerCase().startsWith('echo ')) {
     say(t.substr(5));
-  } else {
+  } else if (t.includes('plan')){
+    const channel = (await slackRepository.getChannels()).poolChannels[0];
+    const event = await planningService.getNextEvent(channel.id!);
+    const invitedUserIds = event.invites.map(inv => inv.userId);
+    const invitedUserDetails = await slackRepository.getUsersDetails(invitedUserIds);
+    const invitedUsers = invitedUserDetails.map(u => u.real_name);
+    say(`Scheduled a new event for ${channel.name} on ${event.time.toUTCString()} for users ${invitedUsers.join(', ')}`)
+  } else if (t.toLowerCase().includes('stop')){
+    await slack.stop();
+    console.log('App stopped!');
+  } 
+  else {
     say(`Hello ${(message as any).user}`!);
   }
 });

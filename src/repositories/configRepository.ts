@@ -4,6 +4,7 @@ class ConfigRepository {
   private config: Config = {
     poolChannels: 'sgre-pizzalight-pool',
     announcementsChannel: 'sgre-pizzalight-announcements',
+    participants: 1
   };
 
   getConfig(): Promise<Config> {
