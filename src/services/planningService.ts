@@ -91,11 +91,15 @@ class PlanningService {
 	 * Opts the provided user out of being picked for events
 	 * @param userId
 	 */
-	async optOut(userId: string){
+	 async optOut(userId: string){
 		const optedOut = await this.stateRepository.getOptedOut();
 		if (!optedOut.includes(userId)) await this.stateRepository.setOptedOut(optedOut.concat(userId));
 	}
 
+	/**
+	 * Opts the provided user in to being picked for events
+	 * @param userId
+	 */
 	async optIn(userId: string){
 		const optedOut = await this.stateRepository.getOptedOut();
 		if (optedOut.includes(userId)) await this.stateRepository.setOptedOut(optedOut.filter(id => id !== userId));
@@ -153,7 +157,7 @@ class PlanningService {
 	private async getNewInviteCandidates(channelId: string, event: Event | undefined = undefined): Promise<string[]> {
 		const optedOut = await this.stateRepository.getOptedOut();
 
-		const pending = event?.invites?.map(pen => pen.userId) || [];
+		const pending = event?.invites?.map(invite => invite.userId) || [];
 		const accepted = event?.accepted || [];
 		const declined = event?.declined || [];
 
@@ -163,7 +167,7 @@ class PlanningService {
 		const availableToAdd = usersInChannel.filter(user => !usersToIgnore.includes(user));
 		let maxParticipants = (await this.configRepository.getConfig()).participants;
 
-		return availableToAdd.slice(0, maxParticipants);
+		return this.randomService.shuffleArray(availableToAdd).slice(0, maxParticipants);
 	}
 }
 
