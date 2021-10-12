@@ -1,5 +1,5 @@
 interface OptOut {
-	optedOutUsers: string[];
+  optedOutUsers: string[];
 }
 
 export default OptOut;

@@ -1,14 +1,14 @@
 export interface Invite {
-	userId: string;
-	inviteSent: Date | undefined;
-	nrOfTries: number;
+  userId: string;
+  inviteSent: Date | undefined;
+  nrOfTries: number;
 }
 
 export interface Event {
-	declined: string[];
-	accepted: string[];
-	invites: Invite[];
+  declined: string[];
+  accepted: string[];
+  invites: Invite[];
 
-	time: Date;
-	channelId: string;
+  time: Date;
+  channelId: string;
 }

@@ -26,7 +26,9 @@ const dateService = new DateService();
 
 const randomService = new RandomService();
 
-const planningService = new PlanningService(stateRepository, dateService, randomService, slackRepository, configRepository);
+const planningService = new PlanningService(
+  stateRepository, dateService, randomService, slackRepository, configRepository,
+);
 
 const getUser = (message: KnownEventFromType<'message'>) => String((message as any).user);
 
@@ -39,7 +41,7 @@ const channelsHandler: Handler = async (text, say) => {
   const announcementText = channels.announcementsChannel ? `#${channels.announcementsChannel.name} to announce to` : 'no announcement channel';
   await say(`Found ${announcementText} and channels ${channels.poolChannels.map((ch) => `#${ch.name}`).join(', ')} to pick participants from!`);
   return true;
-}
+};
 
 const userHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'users') return false;
@@ -51,19 +53,19 @@ const userHandler: Handler = async (text, say) => {
 
   await say(`Found ${userDetails.length} users in ${firstChannel.name}: ${userDetails.map((user) => user.real_name).join(', ')}.`);
   return true;
-}
+};
 
 const planHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'plan') return false;
 
   const channel = (await slackRepository.getChannels()).poolChannels[0];
   const event = await planningService.getNextEvent(channel.id!);
-  const invitedUserIds = event.invites.map(inv => inv.userId);
+  const invitedUserIds = event.invites.map((inv) => inv.userId);
   const invitedUserDetails = await slackRepository.getUsersDetails(invitedUserIds);
-  const invitedUsers = invitedUserDetails.map(u => u.real_name);
-  await say(`Scheduled a new event for ${channel.name} on ${event.time.toUTCString()} for users ${invitedUsers.join(', ')}`)
+  const invitedUsers = invitedUserDetails.map((u) => u.real_name);
+  await say(`Scheduled a new event for ${channel.name} on ${event.time.toUTCString()} for users ${invitedUsers.join(', ')}`);
   return true;
-}
+};
 
 const clearHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'clear') return false;
@@ -72,51 +74,48 @@ const clearHandler: Handler = async (text, say) => {
   await stateRepository.setOptedOut([]);
   await say('Cleared all planned events and opt-outs');
   return true;
-}
+};
 
 const optOutHandler: Handler = async (text, say, message) => {
   const userId = getUser(message);
-  if (text.toLowerCase() === 'opt out'){
-    await planningService.optOut(userId)
-    await say('Opted out!')
+  if (text.toLowerCase() === 'opt out') {
+    await planningService.optOut(userId);
+    await say('Opted out!');
     return true;
-  } else if (text.toLowerCase() === 'opt in'){
+  } if (text.toLowerCase() === 'opt in') {
     await planningService.optIn(userId);
-    await say('Opted in!')
+    await say('Opted in!');
     return true;
   }
-  else {
-    return false;
-  }
-}
+
+  return false;
+};
 
 const yesHandler: Handler = async (text, say, message) => {
   if (text.toLowerCase() !== 'yes') return false;
 
   const userId = getUser(message);
   const res = await planningService.acceptInvitation(userId);
-  if (res){
+  if (res) {
     await say('Successfully accepted invitation!');
-  }
-  else {
+  } else {
     await say('Failed to accept invitation, maybe you were not invited, or have already responded?');
   }
   return true;
-}
+};
 
 const noHandler: Handler = async (text, say, message) => {
   if (text.toLowerCase() !== 'no') return false;
 
   const userId = getUser(message);
   const res = await planningService.declineInvitation(userId);
-  if (res){
+  if (res) {
     await say('Successfully declined invitation.');
-  }
-  else {
+  } else {
     await say('Failed to decline invitation, maybe you were not invited, or have already responded?');
   }
   return true;
-}
+};
 
 const eventsHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'events') return false;
@@ -125,14 +124,14 @@ const eventsHandler: Handler = async (text, say) => {
   await say('Outputting raw state data:');
   await say(JSON.stringify(events));
   return true;
-}
+};
 
 const echoHandler: Handler = async (text, say) => {
   if (!text.toLowerCase().startsWith('echo ')) return false;
 
   await say(text.substr(5));
   return true;
-}
+};
 
 const stopHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'stop') return false;
@@ -141,7 +140,7 @@ const stopHandler: Handler = async (text, say) => {
   await slack.stop();
   console.log('App stopped.');
   return true;
-}
+};
 
 const handlers: Handler[] = [
   channelsHandler,
@@ -153,7 +152,7 @@ const handlers: Handler[] = [
   noHandler,
   eventsHandler,
   echoHandler,
-  stopHandler
+  stopHandler,
 ];
 
 slack.message(async ({ message, say }) => {
@@ -163,7 +162,9 @@ slack.message(async ({ message, say }) => {
 
   console.log(`Received command: '${text}'`);
 
-  for(const handler of handlers){
+  for (const handler of handlers) {
+    // Disabling here is fine, as we want synchronous in-order processing
+    // eslint-disable-next-line no-await-in-loop
     if (await handler(text, say, message)) return;
   }
 });

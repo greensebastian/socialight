@@ -27,26 +27,26 @@ class SlackRepository {
     const announcementsChannel = conversationsResponse.channels!
       .find((channel) => channel.name === config.announcementsChannel);
 
-    for(let channel of poolChannels){
+    for (const channel of poolChannels) {
       this.cachedChannels.set(channel.id!, channel);
     }
 
     return { poolChannels, announcementsChannel };
   }
 
-  async getChannel(channelName: string){
-    channelName = channelName.toLowerCase();
+  async getChannel(name: string) {
+    const channelName = name.toLowerCase();
     const config = await this.configProvider.getConfig();
-    if (!config.poolChannels.includes(channelName)) return;
+    if (!config.poolChannels.includes(channelName)) return undefined;
 
-    const cachedChannel = Array.from(this.cachedChannels.values()).find(channel => channel.name?.toLowerCase() === channelName);
-    if (cachedChannel){
+    const cachedChannel = Array.from(this.cachedChannels.values())
+      .find((channel) => channel.name?.toLowerCase() === channelName);
+    if (cachedChannel) {
       return cachedChannel;
     }
-    else {
-      const channels = await this.getChannels();
-      return channels.poolChannels.find(channel => channel.name?.toLowerCase() === channelName);
-    }
+
+    const channels = await this.getChannels();
+    return channels.poolChannels.find((channel) => channel.name?.toLowerCase() === channelName);
   }
 
   async getUsersInChannel(channelId: string) {
@@ -76,11 +76,10 @@ class SlackRepository {
   async getUsersDetails(userIds: string[]) {
     const nonCachedUserIds: string[] = [];
     const cachedUserIds: string[] = [];
-    for(let userId of userIds){
-      if (this.cachedUsers.has(userId)){
+    for (const userId of userIds) {
+      if (this.cachedUsers.has(userId)) {
         cachedUserIds.push(userId);
-      }
-      else {
+      } else {
         nonCachedUserIds.push(userId);
       }
     }
@@ -95,7 +94,7 @@ class SlackRepository {
       this.cachedUsers.set(user.id!, user);
     });
 
-    return userDetails.concat(cachedUserIds.map(id => this.cachedUsers.get(id)!));
+    return userDetails.concat(cachedUserIds.map((id) => this.cachedUsers.get(id)!));
   }
 }
 

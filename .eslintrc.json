@@ -20,7 +20,10 @@
     "rules": {
         "import/extensions": "off",
         "import/no-unresolved": "off",
-        "no-debugger": "warn"
+        "no-debugger": "warn",
+        "no-restricted-syntax": ["error", "WithStatement", "BinaryExpression[operator='in']"],
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": ["error"]
     },
     "settings": {
         "import/resolver": {
