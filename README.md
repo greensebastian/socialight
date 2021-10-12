@@ -19,6 +19,17 @@ Can be found under Settings -> Basic Information -> App Credentials
 * SLACK_APP_TOKEN
 Starts with *xapp-* and is found under Settings -> Basic Information -> App-Level Tokens
 
+### Events
+
+* POOL_CHANNELS
+Comma separated list of channel names to run events for. Omit # prefix.
+
+* ANNOUNCEMENTS_CHANNEL
+Name of channel where the bot announces shared information, such as successfully planned events. Omit # prefix.
+
+* PARTICIPANTS
+Number of participants per event.
+
 ## Slack app setup
 
 All configuration values needed for connecting with slack are provided as environment variables. Refer to the .env.example file for which ones are needed to run the bot.
