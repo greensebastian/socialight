@@ -1,5 +1,6 @@
 import { App, KnownEventFromType, SayFn } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
+import SchedulingService from './services/schedulingService';
 import SlackRepository from './repositories/slackRepository';
 import ConfigRepository from './repositories/configRepository';
 import StateRepository from './repositories/stateRepository';
@@ -29,6 +30,8 @@ const randomService = new RandomService();
 const planningService = new PlanningService(
   stateRepository, dateService, randomService, slackRepository, configRepository,
 );
+
+const schedulingService = new SchedulingService(planningService, slackRepository);
 
 const getUser = (message: KnownEventFromType<'message'>) => String((message as any).user);
 
@@ -91,8 +94,8 @@ const optOutHandler: Handler = async (text, say, message) => {
   return false;
 };
 
-const yesHandler: Handler = async (text, say, message) => {
-  if (text.toLowerCase() !== 'yes') return false;
+const acceptHandler: Handler = async (text, say, message) => {
+  if (text.toLowerCase() !== 'accept') return false;
 
   const userId = getUser(message);
   const res = await planningService.acceptInvitation(userId);
@@ -104,8 +107,8 @@ const yesHandler: Handler = async (text, say, message) => {
   return true;
 };
 
-const noHandler: Handler = async (text, say, message) => {
-  if (text.toLowerCase() !== 'no') return false;
+const declineHandler: Handler = async (text, say, message) => {
+  if (text.toLowerCase() !== 'decline') return false;
 
   const userId = getUser(message);
   const res = await planningService.declineInvitation(userId);
@@ -126,6 +129,14 @@ const eventsHandler: Handler = async (text, say) => {
   return true;
 };
 
+const messageHandler: Handler = async (text, _, message) => {
+  if (text.toLowerCase() !== 'message') return false;
+
+  const user = getUser(message);
+  await slackRepository.sendMessage(user, 'Hello World!');
+  return true;
+};
+
 const echoHandler: Handler = async (text, say) => {
   if (!text.toLowerCase().startsWith('echo ')) return false;
 
@@ -138,21 +149,26 @@ const stopHandler: Handler = async (text, say) => {
 
   await say('Stopping app...');
   await slack.stop();
+  await schedulingService.stop();
   console.log('App stopped.');
   return true;
 };
 
-const handlers: Handler[] = [
+const devHandlers: Handler[] = [
   channelsHandler,
   userHandler,
   planHandler,
   clearHandler,
-  optOutHandler,
-  yesHandler,
-  noHandler,
   eventsHandler,
+  messageHandler,
   echoHandler,
   stopHandler,
+];
+
+const handlers: Handler[] = [
+  optOutHandler,
+  acceptHandler,
+  declineHandler,
 ];
 
 slack.message(async ({ message, say }) => {
@@ -167,11 +183,20 @@ slack.message(async ({ message, say }) => {
     // eslint-disable-next-line no-await-in-loop
     if (await handler(text, say, message)) return;
   }
+
+  if (process.env.development?.toLowerCase() === 'true') {
+    for (const handler of devHandlers) {
+      // Disabling here is fine, as we want synchronous in-order processing
+      // eslint-disable-next-line no-await-in-loop
+      if (await handler(text, say, message)) return;
+    }
+  }
 });
 
 (async () => {
   // Start your app
   await slack.start(Number(process.env.PORT) || 3000);
+  await schedulingService.start();
 
   console.log('⚡️ Bolt app is running!');
 })();

@@ -21,28 +21,38 @@ npm start
 
 ## Configuration
 
+* DEVELOPMENT
+
+When set to *true*, additional handlers are added to allow for debugging/testing with slack messages.
+
 ### Slack tokens
 
 The required environment variables can be found in the slack API web interface after creating a slack app with the required permissions.
 
 * SLACK_BOT_TOKEN
+
 Starts with *xoxb-* and can be found under Features -> OAuth & Permissions.
 
 * SLACK_SIGNING_SECRET
+
 Can be found under Settings -> Basic Information -> App Credentials
 
 * SLACK_APP_TOKEN
+
 Starts with *xapp-* and is found under Settings -> Basic Information -> App-Level Tokens
 
 ### Events
 
 * POOL_CHANNELS
+
 Comma separated list of channel names to run events for. Omit # prefix.
 
 * ANNOUNCEMENTS_CHANNEL
+
 Name of channel where the bot announces shared information, such as successfully planned events. Omit # prefix.
 
 * PARTICIPANTS
+
 Number of participants per event.
 
 ## Slack app setup

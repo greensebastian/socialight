@@ -96,6 +96,11 @@ class SlackRepository {
 
     return userDetails.concat(cachedUserIds.map((id) => this.cachedUsers.get(id)!));
   }
+
+  async sendMessage(userId: string, text: string) {
+    const conversation = await this.slack.client.conversations.open({ users: userId });
+    await this.slack.client.chat.postMessage({ channel: conversation.channel!.id!, text });
+  }
 }
 
 export default SlackRepository;
