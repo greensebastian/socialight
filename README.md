@@ -67,4 +67,5 @@ The app runs in socket mode, because this allows for much easier development. Ju
 * channels:read
 * chat:write
 * im:history
+* im:write
 * users:read
