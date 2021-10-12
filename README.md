@@ -4,6 +4,21 @@ This app is intended to help create and strengthen connections with people in yo
 
 It runs standalone on any server capable of hosting node apps, and will automatically connect to whatever slack workspace it is installed to. The bot then uses slack to communicate with all participants through dm and announcements.
 
+## Setup
+
+```bash
+git clone https://github.com/greensebastian/socialight.git
+cd socialight
+npm install
+cp .env.example .env
+```
+
+Create slack app, install to workspace, and set up environment variables according to the configuration section.
+
+```bash
+npm start
+```
+
 ## Configuration
 
 ### Slack tokens
@@ -11,7 +26,7 @@ It runs standalone on any server capable of hosting node apps, and will automati
 The required environment variables can be found in the slack API web interface after creating a slack app with the required permissions.
 
 * SLACK_BOT_TOKEN
-Starts with *xoxb-* and can be fonud under Features -> OAuth & Permissions.
+Starts with *xoxb-* and can be found under Features -> OAuth & Permissions.
 
 * SLACK_SIGNING_SECRET
 Can be found under Settings -> Basic Information -> App Credentials
