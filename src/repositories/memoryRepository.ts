@@ -1,9 +1,10 @@
 import { Event } from '@models/event';
+import { IStateRepository } from 'src/core/interface';
 
 const KEY_EVENTS = 'EVENTS';
 const KEY_OPT_OUT = 'OPT_OUT';
 
-class StateRepository {
+class MemoryRepository implements IStateRepository {
   private store = new Map<string, string>();
 
   private parsers = new Map<string, Function | null>();
@@ -28,25 +29,30 @@ class StateRepository {
     return parser ? parser(val) : JSON.parse(val);
   }
 
-  async getOptedOut() {
+  async getOptedOut(): Promise<string[]> {
     return await this.get<string[]>(KEY_OPT_OUT) || [];
   }
 
-  async setOptedOut(optedOut: string[]) {
+  async setOptedOut(optedOut: string[]): Promise<void> {
     await this.set(KEY_OPT_OUT, optedOut);
   }
 
-  async getEvents() {
+  async getEvents(): Promise<Event[]> {
     return await this.get<Event[]>(KEY_EVENTS) || [];
   }
 
-  async setEvents(events: Event[]) {
+  async setEvents(events: Event[]): Promise<void> {
     const parser = (serializedEvents: string): Event[] => {
       const parsed = JSON.parse(serializedEvents) as Event[];
       for (const event of parsed) {
         event.time = new Date(event.time);
         for (const invite of event.invites) {
-          invite.inviteSent = invite.inviteSent ? new Date(invite.inviteSent) : invite.inviteSent;
+          invite.inviteSent = invite.inviteSent
+            ? new Date(invite.inviteSent)
+            : invite.inviteSent;
+          invite.reminderSent = invite.reminderSent
+            ? new Date(invite.reminderSent)
+            : invite.reminderSent;
         }
       }
       return parsed;
@@ -55,4 +61,4 @@ class StateRepository {
   }
 }
 
-export default StateRepository;
+export default MemoryRepository;

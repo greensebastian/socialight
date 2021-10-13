@@ -1,104 +1,44 @@
 import DateService from '@services/dateService';
 import dayjs from 'dayjs';
 import RandomService from '@services/randomService';
-import { Event, Invite } from '@models/event';
+import { Event } from '@models/event';
+import { IStateRepository } from 'src/core/interface';
 import SlackRepository from '../repositories/slackRepository';
 import ConfigRepository from '../repositories/configRepository';
-import StateRepository from '../repositories/stateRepository';
+import EventService from './eventService';
 
 class PlanningService {
-  private stateRepository: StateRepository;
-
-  private dateService: DateService;
-
-  private randomService: RandomService;
-
-  private slackRepository: SlackRepository;
-
-  private configRepository: ConfigRepository;
-
   constructor(
-    stateRepository: StateRepository,
-    dateService: DateService,
-    randomService: RandomService,
-    slackRepository: SlackRepository,
-    configRepository: ConfigRepository,
-  ) {
-    this.stateRepository = stateRepository;
-    this.dateService = dateService;
-    this.randomService = randomService;
-    this.slackRepository = slackRepository;
-    this.configRepository = configRepository;
-  }
+    private stateRepository: IStateRepository,
+    private dateService: DateService,
+    private randomService: RandomService,
+    private slackRepository: SlackRepository,
+    private configRepository: ConfigRepository,
+    private eventService: EventService,
+  ) {}
 
   /**
-   * Finds or creates a new event for the selected channel
-   * @param channelId Id of channel to get or create event for
+   * Finds the next event for the selected channel
+   * @param channelId Id of channel to get event for
    * @returns The next event for the selected channel
    */
-  async getNextEvent(channelId: string): Promise<Event> {
-    const events = await this.getAllEvents();
-    const existingEvent = events.find((ev) => ev.channelId === channelId);
-
-    if (existingEvent) return existingEvent;
-
-    const inviteCandidates = await this.getNewInviteCandidates(channelId);
-    const event: Event = {
-      channelId,
-      time: this.getTimeForNextEvent(),
-      declined: [],
-      accepted: [],
-      invites: await PlanningService.createInvites(inviteCandidates),
-    };
-
-    events.push(event);
-    await this.stateRepository.setEvents(events);
+  async getNextEvent(channelId: string): Promise<Event | undefined> {
+    const events = await this.eventService.getAllEvents();
+    const event = events.find((ev) => ev.channelId === channelId);
 
     return event;
   }
 
   /**
-   * Accepts the first event the user is invited to
-   * @param userId Slack ID of user to accept
-   * @returns true if an invitation was successfully accepted
+   * Creates a new event for the selected channel
+   * @param channelId Id of channel to create event for
+   * @returns The created event
    */
-  async acceptInvitation(
-    userId: string, channelName: string | undefined = undefined,
-  ): Promise<boolean> {
-    const events = await this.getAllEvents();
-    const event = await this.findEventToRespondTo(events, userId, channelName);
-    if (!event) return false;
-
-    const userInvite = event.invites.find((invite) => invite.userId === userId);
-    if (userInvite) {
-      event.invites = event.invites.filter((invite) => invite.userId !== userId);
-      event.accepted.push(userId);
-      await this.stateRepository.setEvents(events);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Declines the first event the user is invited to
-   * @param userId Slack ID of user to decline
-   * @returns true if an invitation was successfully declined
-   */
-  async declineInvitation(
-    userId: string, channelName: string | undefined = undefined,
-  ): Promise<boolean> {
-    const events = await this.getAllEvents();
-    const event = await this.findEventToRespondTo(events, userId, channelName);
-    if (!event) return false;
-
-    const userInvite = event.invites.find((invite) => invite.userId === userId);
-    if (userInvite) {
-      event.invites = event.invites.filter((invite) => invite.userId !== userId);
-      event.declined.push(userId);
-      await this.stateRepository.setEvents(events);
-      return true;
-    }
-    return false;
+  async createEvent(channelId: string): Promise<Event> {
+    const date = this.getNewEventTime();
+    const userIds = await this.getUserIdsToInvite(channelId);
+    const event = await this.eventService.createEvent(channelId, date, userIds);
+    return event;
   }
 
   /**
@@ -121,36 +61,7 @@ class PlanningService {
     }
   }
 
-  private async findEventToRespondTo(
-    events: Event[], userId: string, channelName: string | undefined,
-  ): Promise<Event | undefined> {
-    PlanningService.sortByDate(events);
-
-    if (channelName) {
-      const channelId = await this.slackRepository.getChannel(channelName);
-      return events.find((event) => event.channelId === channelId);
-    }
-
-    for (const event of events) {
-      const userInvite = event.invites.find((invite) => invite.userId === userId);
-      if (userInvite) {
-        return event;
-      }
-    }
-
-    return undefined;
-  }
-
-  private static sortByDate(events: Event[]) {
-    events.sort((a, b) => (a.time <= b.time ? -1 : 1));
-  }
-
-  private async getAllEvents(expired: boolean = false) {
-    const events = await this.stateRepository.getEvents();
-    return expired ? events : events.filter((event) => event.time > this.dateService.now());
-  }
-
-  private getTimeForNextEvent(): Date {
+  private getNewEventTime(): Date {
     const currentTime = this.dateService.now();
     const now = dayjs(currentTime.toUTCString());
 
@@ -163,18 +74,12 @@ class PlanningService {
     return dayOfMeeting.startOf('day').add(17, 'hour').toDate();
   }
 
-  private static async createInvites(users: string[]): Promise<Invite[]> {
-    return users.map((user) => {
-      const invite: Invite = {
-        nrOfTries: 0,
-        userId: user,
-        inviteSent: undefined,
-      };
-      return invite;
-    });
+  async fillInvites(event: Event) {
+    const userIds = await this.getUserIdsToInvite(event.channelId, event);
+    await this.eventService.inviteToEvent(event, userIds);
   }
 
-  private async getNewInviteCandidates(
+  private async getUserIdsToInvite(
     channelId: string, event: Event | undefined = undefined,
   ): Promise<string[]> {
     const optedOut = await this.stateRepository.getOptedOut();

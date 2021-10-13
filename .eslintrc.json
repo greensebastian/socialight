@@ -23,7 +23,10 @@
         "no-debugger": "warn",
         "no-restricted-syntax": ["error", "WithStatement", "BinaryExpression[operator='in']"],
         "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": ["error"]
+        "@typescript-eslint/no-unused-vars": ["error"],
+        "no-useless-constructor": "off",
+        "no-empty-function": "off",
+        "no-await-in-loop": "off"
     },
     "settings": {
         "import/resolver": {

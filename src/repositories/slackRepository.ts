@@ -4,18 +4,11 @@ import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
 
 class SlackRepository {
-  private configProvider: ConfigRepository;
-
-  private slack: App;
-
   private cachedUsers = new Map<string, User>();
 
   private cachedChannels = new Map<string, Channel>()
 
-  constructor(configProvider: ConfigRepository, slack: App) {
-    this.configProvider = configProvider;
-    this.slack = slack;
-  }
+  constructor(private configProvider: ConfigRepository, private slack: App) {}
 
   async getChannels() {
     const config = await this.configProvider.getConfig();
@@ -52,7 +45,10 @@ class SlackRepository {
   async getUsersInChannel(channelId: string) {
     const userIds = await this.getChannelMemberIds(channelId);
 
-    return Array.from(userIds);
+    // We need to fetch all user details to ensure none of the users are bots
+    const users = await this.getUsersDetails(Array.from(userIds));
+
+    return users.map((user) => user.id!);
   }
 
   private async getChannelMemberIds(channelId: string) {
@@ -61,7 +57,6 @@ class SlackRepository {
     let cursor: string | undefined;
 
     while (moreToFetch) {
-      // eslint-disable-next-line no-await-in-loop
       const usersResponse = await this.slack.client.conversations
         .members({ channel: channelId, limit: 1000, cursor });
 
@@ -88,7 +83,7 @@ class SlackRepository {
       .users.info({ user: userId })));
     const userDetails = userDetailsResponse
       .map((res) => res.user!)
-      .filter((user) => !user.is_bot);
+      .filter((user) => !user.is_bot && !user.is_app_user);
 
     userDetails.forEach((user) => {
       this.cachedUsers.set(user.id!, user);
@@ -100,6 +95,11 @@ class SlackRepository {
   async sendMessage(userId: string, text: string) {
     const conversation = await this.slack.client.conversations.open({ users: userId });
     await this.slack.client.chat.postMessage({ channel: conversation.channel!.id!, text });
+  }
+
+  async sendAnnouncement(text: string) {
+    const channel = await (await this.getChannels()).announcementsChannel;
+    await this.slack.client.chat.postMessage({ channel: channel!.id!, text });
   }
 }
 

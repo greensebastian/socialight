@@ -1,9 +1,11 @@
 import { App, KnownEventFromType, SayFn } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
+import FileRepository from './repositories/fileRepository';
+import EventService from './services/eventService';
+import SlackService from './services/slackService';
 import SchedulingService from './services/schedulingService';
 import SlackRepository from './repositories/slackRepository';
 import ConfigRepository from './repositories/configRepository';
-import StateRepository from './repositories/stateRepository';
 import DateService from './services/dateService';
 import PlanningService from './services/planningService';
 import RandomService from './services/randomService';
@@ -21,17 +23,29 @@ const configRepository = new ConfigRepository();
 
 const slackRepository = new SlackRepository(configRepository, slack);
 
-const stateRepository = new StateRepository();
+const stateRepository = new FileRepository();
 
 const dateService = new DateService();
 
 const randomService = new RandomService();
 
+const eventService = new EventService(stateRepository, dateService);
+
 const planningService = new PlanningService(
-  stateRepository, dateService, randomService, slackRepository, configRepository,
+  stateRepository, dateService, randomService, slackRepository, configRepository, eventService,
 );
 
-const schedulingService = new SchedulingService(planningService, slackRepository);
+const slackService = new SlackService(slackRepository);
+
+const schedulingService = new SchedulingService(
+  planningService,
+  slackRepository,
+  eventService,
+  dateService,
+  slackService,
+  configRepository,
+  stateRepository,
+);
 
 const getUser = (message: KnownEventFromType<'message'>) => String((message as any).user);
 
@@ -62,8 +76,11 @@ const planHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'plan') return false;
 
   const channel = (await slackRepository.getChannels()).poolChannels[0];
-  const event = await planningService.getNextEvent(channel.id!);
-  const invitedUserIds = event.invites.map((inv) => inv.userId);
+  let event = await planningService.getNextEvent(channel.id!);
+
+  event = event || await planningService.createEvent(channel.id!);
+
+  const invitedUserIds = event!.invites.map((inv) => inv.userId);
   const invitedUserDetails = await slackRepository.getUsersDetails(invitedUserIds);
   const invitedUsers = invitedUserDetails.map((u) => u.real_name);
   await say(`Scheduled a new event for ${channel.name} on ${event.time.toUTCString()} for users ${invitedUsers.join(', ')}`);
@@ -98,7 +115,7 @@ const acceptHandler: Handler = async (text, say, message) => {
   if (text.toLowerCase() !== 'accept') return false;
 
   const userId = getUser(message);
-  const res = await planningService.acceptInvitation(userId);
+  const res = await eventService.acceptInvitation(userId);
   if (res) {
     await say('Successfully accepted invitation!');
   } else {
@@ -111,7 +128,7 @@ const declineHandler: Handler = async (text, say, message) => {
   if (text.toLowerCase() !== 'decline') return false;
 
   const userId = getUser(message);
-  const res = await planningService.declineInvitation(userId);
+  const res = await eventService.declineInvitation(userId);
   if (res) {
     await say('Successfully declined invitation.');
   } else {
@@ -154,6 +171,13 @@ const stopHandler: Handler = async (text, say) => {
   return true;
 };
 
+const tickHandler: Handler = async (text) => {
+  if (text.toLowerCase() !== 'tick') return false;
+
+  schedulingService.tick();
+  return true;
+};
+
 const devHandlers: Handler[] = [
   channelsHandler,
   userHandler,
@@ -163,6 +187,7 @@ const devHandlers: Handler[] = [
   messageHandler,
   echoHandler,
   stopHandler,
+  tickHandler,
 ];
 
 const handlers: Handler[] = [
