@@ -1,20 +1,41 @@
 import { Event } from '@models/event';
 import { IStateRepository } from 'src/core/interface';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 
 const KEY_EVENTS = 'EVENTS';
 const KEY_OPT_OUT = 'OPT_OUT';
 
-const file = (key: string) => `state/${key}.json`;
+const fileDir = 'state';
+const file = (key: string) => `${fileDir}/${key}.json`;
 
 class FileRepository implements IStateRepository {
   private parsers = new Map<string, Function | null>();
+
+  constructor() {
+    const parser = (serializedEvents: string): Event[] => {
+      const parsed = JSON.parse(serializedEvents) as Event[];
+      for (const event of parsed) {
+        event.time = new Date(event.time);
+        for (const invite of event.invites) {
+          invite.inviteSent = invite.inviteSent
+            ? new Date(invite.inviteSent)
+            : invite.inviteSent;
+          invite.reminderSent = invite.reminderSent
+            ? new Date(invite.reminderSent)
+            : invite.reminderSent;
+        }
+      }
+      return parsed;
+    };
+    this.parsers.set(KEY_EVENTS, parser);
+  }
 
   private async set<T>(
     key: string,
     val: any,
     parser: ((stored: string) => T) | undefined = undefined,
   ): Promise<void> {
+    mkdirSync(fileDir, { recursive: true });
     writeFileSync(file(key), JSON.stringify(val), 'utf-8');
     if (parser) {
       this.parsers.set(key, parser);
@@ -48,22 +69,7 @@ class FileRepository implements IStateRepository {
   }
 
   async setEvents(events: Event[]): Promise<void> {
-    const parser = (serializedEvents: string): Event[] => {
-      const parsed = JSON.parse(serializedEvents) as Event[];
-      for (const event of parsed) {
-        event.time = new Date(event.time);
-        for (const invite of event.invites) {
-          invite.inviteSent = invite.inviteSent
-            ? new Date(invite.inviteSent)
-            : invite.inviteSent;
-          invite.reminderSent = invite.reminderSent
-            ? new Date(invite.reminderSent)
-            : invite.reminderSent;
-        }
-      }
-      return parsed;
-    };
-    return this.set(KEY_EVENTS, events, parser);
+    return this.set(KEY_EVENTS, events);
   }
 }
 

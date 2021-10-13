@@ -2,6 +2,7 @@ import { App } from '@slack/bolt';
 import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse';
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
+import { ConversationsOpenResponse } from '@slack/web-api';
 
 class SlackRepository {
   private cachedUsers = new Map<string, User>();
@@ -92,13 +93,31 @@ class SlackRepository {
     return userDetails.concat(cachedUserIds.map((id) => this.cachedUsers.get(id)!));
   }
 
+  private async openUserConversation(userId: string): Promise<ConversationsOpenResponse> {
+    return this.slack.client.conversations.open({ users: userId });
+  }
+
   async sendMessage(userId: string, text: string) {
-    const conversation = await this.slack.client.conversations.open({ users: userId });
+    const conversation = await this.openUserConversation(userId);
     await this.slack.client.chat.postMessage({ channel: conversation.channel!.id!, text });
   }
 
+  async sendMarkdown(userId: string, markdown: string) {
+    const blocks = [{
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: markdown,
+      },
+    }];
+    const conversation = await this.openUserConversation(userId);
+    await this.slack.client.chat.postMessage({
+      channel: conversation.channel!.id!, blocks, text: markdown,
+    });
+  }
+
   async sendAnnouncement(text: string) {
-    const channel = await (await this.getChannels()).announcementsChannel;
+    const channel = (await this.getChannels()).announcementsChannel;
     await this.slack.client.chat.postMessage({ channel: channel!.id!, text });
   }
 }

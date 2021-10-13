@@ -65,13 +65,40 @@ class PlanningService {
     const currentTime = this.dateService.now();
     const now = dayjs(currentTime.toUTCString());
 
-    // Dont schedule within 2 weeks
-    const twoWeeksOut = now.add(8 - now.day(), 'day').add(7, 'day');
+    // Dont schedule within 1 weeks
+    const twoWeeksOut = now.add(8 - now.day(), 'day').add(0, 'day');
     // Add 0-3 days to randomize monday through thursday
     const daysToAdd = this.randomService.getInt(4);
     const dayOfMeeting = twoWeeksOut.add(daysToAdd, 'day');
     // Normalize to 17:00
     return dayOfMeeting.startOf('day').add(17, 'hour').toDate();
+  }
+
+  /**
+   * Expire events one day before they're supposed to start if not enough people have accepted
+   * @returns Events which have been removed
+   */
+  async removeFailedEvents(): Promise<Event[]> {
+    const events = await this.eventService.getAllEvents();
+    const config = await this.configRepository.getConfig();
+    const now = dayjs(this.dateService.now());
+
+    const failedEvents: Event[] = [];
+    const activeEvents: Event[] = [];
+
+    for (const event of events) {
+      const date = dayjs(event.time);
+      const failed = !event.announced
+        && event.accepted.length < config.participants
+        && now.isAfter(date.subtract(1, 'day'));
+
+      if (failed) failedEvents.push(event);
+      else activeEvents.push(event);
+    }
+
+    await this.stateRepository.setEvents(activeEvents);
+
+    return failedEvents;
   }
 
   async fillInvites(event: Event) {

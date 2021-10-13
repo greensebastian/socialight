@@ -1,5 +1,6 @@
 import { App, KnownEventFromType, SayFn } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
+import Config from '@models/config';
 import FileRepository from './repositories/fileRepository';
 import EventService from './services/eventService';
 import SlackService from './services/slackService';
@@ -35,7 +36,7 @@ const planningService = new PlanningService(
   stateRepository, dateService, randomService, slackRepository, configRepository, eventService,
 );
 
-const slackService = new SlackService(slackRepository);
+const slackService = new SlackService(slackRepository, dateService);
 
 const schedulingService = new SchedulingService(
   planningService,
@@ -44,10 +45,9 @@ const schedulingService = new SchedulingService(
   dateService,
   slackService,
   configRepository,
-  stateRepository,
 );
 
-const getUser = (message: KnownEventFromType<'message'>) => String((message as any).user);
+const getUserId = (message: KnownEventFromType<'message'>) => String((message as any).user);
 
 type Handler = (text: string, say: SayFn, message: KnownEventFromType<'message'>) => Promise<boolean>;
 
@@ -76,9 +76,7 @@ const planHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'plan') return false;
 
   const channel = (await slackRepository.getChannels()).poolChannels[0];
-  let event = await planningService.getNextEvent(channel.id!);
-
-  event = event || await planningService.createEvent(channel.id!);
+  const event = await planningService.createEvent(channel.id!);
 
   const invitedUserIds = event!.invites.map((inv) => inv.userId);
   const invitedUserDetails = await slackRepository.getUsersDetails(invitedUserIds);
@@ -97,7 +95,7 @@ const clearHandler: Handler = async (text, say) => {
 };
 
 const optOutHandler: Handler = async (text, say, message) => {
-  const userId = getUser(message);
+  const userId = getUserId(message);
   if (text.toLowerCase() === 'opt out') {
     await planningService.optOut(userId);
     await say('Opted out!');
@@ -114,31 +112,32 @@ const optOutHandler: Handler = async (text, say, message) => {
 const acceptHandler: Handler = async (text, say, message) => {
   if (text.toLowerCase() !== 'accept') return false;
 
-  const userId = getUser(message);
-  const res = await eventService.acceptInvitation(userId);
-  if (res) {
-    await say('Successfully accepted invitation!');
-  } else {
-    await say('Failed to accept invitation, maybe you were not invited, or have already responded?');
-  }
+  const userId = getUserId(message);
+  const event = await eventService.acceptInvitation(userId);
+  await slackService.sendAcceptResult(event, userId);
   return true;
 };
 
 const declineHandler: Handler = async (text, say, message) => {
   if (text.toLowerCase() !== 'decline') return false;
 
-  const userId = getUser(message);
+  const userId = getUserId(message);
   const res = await eventService.declineInvitation(userId);
-  if (res) {
-    await say('Successfully declined invitation.');
-  } else {
-    await say('Failed to decline invitation, maybe you were not invited, or have already responded?');
-  }
+  await slackService.sendDeclineResult(res, userId);
   return true;
 };
 
-const eventsHandler: Handler = async (text, say) => {
+const eventsHandler: Handler = async (text, say, message) => {
   if (text.toLowerCase() !== 'events') return false;
+
+  const userId = getUserId(message);
+  const events = await eventService.getUserEvents(userId);
+  await slackService.sendInviteList(events, userId, say);
+  return true;
+};
+
+const dumpHandler: Handler = async (text, say) => {
+  if (text.toLowerCase() !== 'dump') return false;
 
   const events = await stateRepository.getEvents();
   await say('Outputting raw state data:');
@@ -149,7 +148,7 @@ const eventsHandler: Handler = async (text, say) => {
 const messageHandler: Handler = async (text, _, message) => {
   if (text.toLowerCase() !== 'message') return false;
 
-  const user = getUser(message);
+  const user = getUserId(message);
   await slackRepository.sendMessage(user, 'Hello World!');
   return true;
 };
@@ -178,12 +177,18 @@ const tickHandler: Handler = async (text) => {
   return true;
 };
 
+const fallbackHandler: Handler = async (text, say) => {
+  await say(`I dont understand what you mean by '${text}' :exploding_head:`);
+  await SlackService.sendCommandList(say);
+  return true;
+};
+
 const devHandlers: Handler[] = [
   channelsHandler,
   userHandler,
   planHandler,
   clearHandler,
-  eventsHandler,
+  dumpHandler,
   messageHandler,
   echoHandler,
   stopHandler,
@@ -191,10 +196,26 @@ const devHandlers: Handler[] = [
 ];
 
 const handlers: Handler[] = [
+  eventsHandler,
   optOutHandler,
   acceptHandler,
   declineHandler,
+  fallbackHandler,
 ];
+
+const activeHandlers: Handler[] = [];
+
+const registerHandlers = async (config: Config) => {
+  if (config.development) {
+    for (const devHandler of devHandlers) {
+      activeHandlers.push(devHandler);
+    }
+  }
+
+  for (const handler of handlers) {
+    activeHandlers.push(handler);
+  }
+};
 
 slack.message(async ({ message, say }) => {
   if (message.channel_type !== 'im') return;
@@ -203,18 +224,8 @@ slack.message(async ({ message, say }) => {
 
   console.log(`Received command: '${text}'`);
 
-  for (const handler of handlers) {
-    // Disabling here is fine, as we want synchronous in-order processing
-    // eslint-disable-next-line no-await-in-loop
+  for (const handler of activeHandlers) {
     if (await handler(text, say, message)) return;
-  }
-
-  if (process.env.development?.toLowerCase() === 'true') {
-    for (const handler of devHandlers) {
-      // Disabling here is fine, as we want synchronous in-order processing
-      // eslint-disable-next-line no-await-in-loop
-      if (await handler(text, say, message)) return;
-    }
   }
 });
 
@@ -222,6 +233,9 @@ slack.message(async ({ message, say }) => {
   // Start your app
   await slack.start(Number(process.env.PORT) || 3000);
   await schedulingService.start();
+
+  const config = await configRepository.getConfig();
+  await registerHandlers(config);
 
   console.log('⚡️ Bolt app is running!');
 })();

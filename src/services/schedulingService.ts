@@ -3,12 +3,12 @@ import ConfigRepository from '@repositories/configRepository';
 import SlackRepository from '@repositories/slackRepository';
 import dayjs from 'dayjs';
 import { Job, scheduleJob } from 'node-schedule';
-import { IStateRepository } from 'src/core/interface';
 import DateService from './dateService';
 import EventService from './eventService';
 import PlanningService from './planningService';
 import SlackService from './slackService';
 
+const EVERY_1_JAN = '0 0 12 1 1 ? *';
 const EVERY_5_MIN = '*/5 * * * *';
 const EVERY_1_MIN = '*/1 * * * *';
 
@@ -24,7 +24,6 @@ class SchedulingService {
     private dateService: DateService,
     private slackService: SlackService,
     private configRepository: ConfigRepository,
-    private stateRepository: IStateRepository,
   ) {}
 
   public start(): Promise<void> {
@@ -32,7 +31,10 @@ class SchedulingService {
 
     this.job = scheduleJob(EVERY_5_MIN, async (fireDate) => {
       console.log(`Running scheduler... ${(fireDate ?? this.dateService.now()).toISOString()}`);
+
+      // Order of operations is important here
       await this.announceEvents();
+      await this.removeFailedEvents();
       await this.planNewEvents();
       await this.expireOldInvites();
       await this.createNewInvites();
@@ -58,7 +60,7 @@ class SchedulingService {
 
   private async announceEvents() {
     const config = await this.configRepository.getConfig();
-    const events = await this.stateRepository.getEvents();
+    const events = await this.eventService.getAllEvents();
     for (const event of events) {
       if (event.accepted.length === config.participants && !event.announced) {
         await this.slackService.sendAnnouncement(event);
@@ -66,6 +68,18 @@ class SchedulingService {
         await this.eventService.updateEvent(event);
       }
     }
+  }
+
+  /**
+   * Expire events one day before they're supposed to start if not enough people have accepted
+   */
+  private async removeFailedEvents() {
+    const failedEvents = await this.planningService.removeFailedEvents();
+
+    await Promise.all(failedEvents.map(async (event) => {
+      const participantsToNotify = event.accepted.concat(event.invites.map((inv) => inv.userId));
+      await this.slackService.sendFailedEventNotification(event, participantsToNotify);
+    }));
   }
 
   private async planNewEvents() {
@@ -97,32 +111,46 @@ class SchedulingService {
 
     for (const event of events) {
       for (const invite of event.invites) {
-        if (this.shouldSendReminder(invite)) {
+        const now = this.dateService.now();
+        if (await this.shouldSendReminder(invite)) {
           await this.slackService.sendReminder(invite, event.time);
-          invite.reminderSent = this.dateService.now();
+          invite.reminderSent = now;
           await this.eventService.updateEvent(event);
         }
-        if (SchedulingService.shouldSendInvite(invite)) {
+        if (await this.shouldSendInvite(invite)) {
           await this.slackService.sendInvite(invite, event.time);
-          invite.inviteSent = this.dateService.now();
+          invite.inviteSent = now;
+          invite.reminderSent = now;
           await this.eventService.updateEvent(event);
         }
       }
     }
   }
 
-  private static shouldSendInvite(invite: Invite): boolean {
-    return !invite.inviteSent;
+  private async isInActiveHours(): Promise<boolean> {
+    const config = await this.configRepository.getConfig();
+    if (config.development) return true;
+
+    const now = dayjs(this.dateService.now());
+    const start = now.startOf('day').add(7, 'hour');
+    const end = now.startOf('day').add(20, 'hour');
+    return now.isAfter(start) && now.isBefore(end);
+  }
+
+  private async shouldSendInvite(invite: Invite): Promise<boolean> {
+    return await this.isInActiveHours() && !invite.inviteSent;
   }
 
   private static shouldExpire(invite: Invite): boolean {
-    return !!invite.reminderSent && dayjs(invite.inviteSent).add(3, 'day').isBefore(dayjs(invite.reminderSent));
+    return !!invite.reminderSent && dayjs(invite.inviteSent).add(1, 'day').isBefore(dayjs(invite.reminderSent));
   }
 
-  private shouldSendReminder(invite: Invite): boolean {
+  private async shouldSendReminder(invite: Invite): Promise<boolean> {
     const latestReminder = dayjs(invite.reminderSent || '1970-01-01');
 
-    return !!invite.inviteSent && latestReminder.isBefore(dayjs(this.dateService.now()).subtract(1, 'day'));
+    return await this.isInActiveHours()
+      && !!invite.inviteSent
+      && latestReminder.isBefore(dayjs(this.dateService.now()).subtract(2, 'hour'));
   }
 }
 
