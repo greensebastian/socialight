@@ -14,11 +14,24 @@ class SlackRepository {
   async getChannels() {
     const config = await this.configProvider.getConfig();
 
-    const conversationsResponse = await this.slack.client.conversations.list({ types: 'public_channel', exclude_archived: true, limit: 1000 });
+    let moreToFetch = true;
+    let channels: Channel[] = [];
+    let cursor: string | undefined;
+
+    while (moreToFetch) {
+      const conversationsResponse = await this.slack.client.conversations.list({
+        types: 'public_channel', exclude_archived: true, limit: 1000, cursor,
+      });
+
+      channels = channels.concat(conversationsResponse.channels!);
+      cursor = conversationsResponse.response_metadata!.next_cursor;
+      moreToFetch = !!cursor;
+    }
+
     const poolChannelNames = config.poolChannels.split(',');
-    const poolChannels = conversationsResponse.channels!
+    const poolChannels = channels
       .filter((channel) => poolChannelNames.includes(channel.name!));
-    const announcementsChannel = conversationsResponse.channels!
+    const announcementsChannel = channels
       .find((channel) => channel.name === config.announcementsChannel);
 
     for (const channel of poolChannels) {
@@ -28,7 +41,7 @@ class SlackRepository {
     return { poolChannels, announcementsChannel };
   }
 
-  async getChannel(name: string) {
+  async getChannelByName(name: string) {
     const channelName = name.toLowerCase();
     const config = await this.configProvider.getConfig();
     if (!config.poolChannels.includes(channelName)) return undefined;
@@ -41,6 +54,12 @@ class SlackRepository {
 
     const channels = await this.getChannels();
     return channels.poolChannels.find((channel) => channel.name?.toLowerCase() === channelName);
+  }
+
+  async getChannelById(channelId: string): Promise<Channel | undefined> {
+    if (!this.cachedChannels.has(channelId)) await this.getChannels();
+    const channel = this.cachedChannels.get(channelId);
+    return channel;
   }
 
   async getUsersInChannel(channelId: string) {
@@ -97,12 +116,21 @@ class SlackRepository {
     return this.slack.client.conversations.open({ users: userId });
   }
 
+  async inviteToChannel(userIds: string[], channelId: string) {
+    await this.slack.client.conversations.invite({ channel: channelId, users: userIds.join(',') });
+  }
+
   async sendMessage(userId: string, text: string) {
     const conversation = await this.openUserConversation(userId);
     await this.slack.client.chat.postMessage({ channel: conversation.channel!.id!, text });
   }
 
-  async sendMarkdown(userId: string, markdown: string) {
+  async sendMarkdownToUser(userId: string, markdown: string) {
+    const conversation = await this.openUserConversation(userId);
+    await this.sendMarkdown(conversation.channel!.id!, markdown);
+  }
+
+  private async sendMarkdown(channelId: string, markdown: string) {
     const blocks = [{
       type: 'section',
       text: {
@@ -110,15 +138,14 @@ class SlackRepository {
         text: markdown,
       },
     }];
-    const conversation = await this.openUserConversation(userId);
     await this.slack.client.chat.postMessage({
-      channel: conversation.channel!.id!, blocks, text: markdown,
+      channel: channelId, blocks, text: markdown,
     });
   }
 
-  async sendAnnouncement(text: string) {
+  async sendAnnouncement(markdown: string) {
     const channel = (await this.getChannels()).announcementsChannel;
-    await this.slack.client.chat.postMessage({ channel: channel!.id!, text });
+    await this.slack.client.chat.postMessage({ channel: channel!.id!, text: markdown });
   }
 }
 

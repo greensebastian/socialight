@@ -45,9 +45,13 @@ class PlanningService {
    * Opts the provided user out of being picked for events
    * @param userId
    */
-  async optOut(userId: string) {
+  async optOut(userId: string): Promise<Event[]> {
     const optedOut = await this.stateRepository.getOptedOut();
-    if (!optedOut.includes(userId)) await this.stateRepository.setOptedOut(optedOut.concat(userId));
+    if (!optedOut.includes(userId)) {
+      await this.stateRepository.setOptedOut(optedOut.concat(userId));
+      return this.eventService.declineAllInvitations(userId);
+    }
+    return [];
   }
 
   /**

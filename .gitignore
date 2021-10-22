@@ -107,3 +107,6 @@ dist
 
 # State folder
 state
+
+# VSCode
+.vscode

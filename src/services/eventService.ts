@@ -16,6 +16,7 @@ class EventService {
    */
   async getAllEvents(expired: boolean = false): Promise<Event[]> {
     const events = await this.stateRepository.getEvents();
+    EventService.sortByDate(events);
     return expired ? events : events.filter((event) => event.time > this.dateService.now());
   }
 
@@ -70,10 +71,7 @@ class EventService {
 
     const userInvite = event.invites.find((invite) => invite.userId === userId);
     if (userInvite) {
-      event.invites = event.invites.filter((invite) => invite.userId !== userId);
-      event.accepted.push(userId);
-      await this.stateRepository.setEvents(events);
-      return event;
+      return this.acceptEvent(event, userId);
     }
     return undefined;
   }
@@ -92,12 +90,39 @@ class EventService {
 
     const userInvite = event.invites.find((invite) => invite.userId === userId);
     if (userInvite) {
-      event.invites = event.invites.filter((invite) => invite.userId !== userId);
-      event.declined.push(userId);
-      await this.stateRepository.setEvents(events);
-      return event;
+      return this.declineEvent(event, userId);
     }
     return undefined;
+  }
+
+  private async acceptEvent(event: Event, userId: string): Promise<Event> {
+    const newEvent = { ...event };
+    newEvent.invites = event.invites.filter((invite) => invite.userId !== userId);
+    newEvent.accepted.push(userId);
+    await this.updateEvent(newEvent);
+    return newEvent;
+  }
+
+  private async declineEvent(event: Event, userId: string): Promise<Event> {
+    const newEvent = { ...event };
+    newEvent.invites = event.invites.filter((invite) => invite.userId !== userId);
+    newEvent.declined.push(userId);
+    await this.updateEvent(newEvent);
+    return newEvent;
+  }
+
+  async declineAllInvitations(userId: string): Promise<Event[]> {
+    const events = await this.getUserEvents(userId);
+    const pendingEvents = events.filter(
+      (event) => event.invites.map((invite) => invite.userId).includes(userId),
+    );
+
+    const updatedEvents: Event[] = [];
+    for (const event of pendingEvents) {
+      const updated = await this.declineEvent(event, userId);
+      updatedEvents.push(updated);
+    }
+    return updatedEvents;
   }
 
   async updateEvent(newEvent: Event) {

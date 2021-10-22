@@ -113,12 +113,12 @@ class SchedulingService {
       for (const invite of event.invites) {
         const now = this.dateService.now();
         if (await this.shouldSendReminder(invite)) {
-          await this.slackService.sendReminder(invite, event.time);
+          await this.slackService.sendReminder(invite, event.channelId, event.time);
           invite.reminderSent = now;
           await this.eventService.updateEvent(event);
         }
         if (await this.shouldSendInvite(invite)) {
-          await this.slackService.sendInvite(invite, event.time);
+          await this.slackService.sendInvite(invite, event.channelId, event.time);
           invite.inviteSent = now;
           invite.reminderSent = now;
           await this.eventService.updateEvent(event);

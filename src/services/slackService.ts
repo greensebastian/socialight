@@ -12,6 +12,15 @@ const dateFormat = (date: Date) => {
   return d.format('dddd D MMMM, HH:mm');
 };
 
+const makeAt = (text: string) => `<@${text}>`;
+
+const makeChannel = (channelId: string) => `<#${channelId}>`;
+
+const channelDate = (channelId: string, date: Date) => {
+  const text = `${makeChannel(channelId)} on *${dateFormat(date)}*`;
+  return text;
+};
+
 const inviteRow = (event: Event, userId: string, now: Date) => {
   const dayDiff = dayjs(event.time).startOf('day').diff(dayjs(now).startOf('day'), 'day');
   let status: string;
@@ -24,40 +33,72 @@ const inviteRow = (event: Event, userId: string, now: Date) => {
   } else {
     status = 'dont have a status for this event, that\'s odd :eyes:';
   }
-  return `*${dateFormat(event.time)}*, ${dayDiff} day(s) from now.\nYou ${status}`;
+  return `${channelDate(event.channelId, event.time)}, ${dayDiff} day(s) from now.\nYou ${status}`;
 };
 
 class SlackService {
+  private cachedAnnouncementChannelId: string | undefined = undefined;
+
   constructor(private slackRepository: SlackRepository, private dateService: DateService) {}
 
-  async sendInvite(invite: Invite, date: Date) {
-    await this.slackRepository.sendMarkdown(invite.userId, `You've been invited to have pizza on *${dateFormat(date)}!*\n\n${respondMkdwn}!`);
+  private info = async () => `This bot invites people at random to join up and have pizza together. When an event is successfully planned, it is announced to ${makeChannel(await this.announcementChannelId())}\n\nSend 'help' to list available commands!`;
+
+  async sendInvite(invite: Invite, channelId: string, date: Date) {
+    await this.slackRepository.sendMarkdownToUser(invite.userId, `You've been invited to have pizza with ${channelDate(channelId, date)}!\n\n${respondMkdwn}!\n\n${await this.info()}`);
   }
 
-  async sendReminder(invite: Invite, date: Date) {
-    await this.slackRepository.sendMessage(invite.userId, `Dont forget to respond to your invite to have pizza on ${dateFormat(date)}!`);
+  async sendReminder(invite: Invite, channelId: string, date: Date) {
+    await this.slackRepository.sendMessage(invite.userId, `Dont forget to respond to your invite to have pizza with ${channelDate(channelId, date)}\n\n${respondMkdwn}!`);
   }
 
   async sendAnnouncement(event: Event) {
-    await this.slackRepository.sendAnnouncement(`Successfully scheduled event! ${JSON.stringify(event)}`);
+    const users = await this.slackRepository.getUsersDetails(event.accepted);
+    const usersText = users.map((user) => user.name!).map(makeAt).join(', ');
+    const intro = `Successfully scheduled event for ${channelDate(event.channelId, event.time)} :pizza:`;
+    const content = `${usersText} will meet up and have pizza together.`;
+
+    // Currently not enabled as it requires channels:manage permission which is a bit much
+    // await this.ensureInvitedToChannel(event.accepted);
+    const announcement = `${intro}\n\n${content}`;
+    await this.slackRepository.sendAnnouncement(announcement);
+    await Promise.all(
+      event.accepted.map((user) => this.slackRepository.sendMarkdownToUser(user, announcement)),
+    );
+  }
+
+  private async announcementChannelId() {
+    if (!this.cachedAnnouncementChannelId) {
+      this.cachedAnnouncementChannelId = (await this.slackRepository.getChannels())
+        .announcementsChannel?.id;
+    }
+
+    return this.cachedAnnouncementChannelId!;
+  }
+
+  private async ensureInvitedToChannel(userIds: string[]) {
+    await this.slackRepository.inviteToChannel(userIds, await this.announcementChannelId());
   }
 
   async sendAcceptResult(event: Event | undefined, userId: string) {
-    const message = event ? `Successfully *accepted* event on *${dateFormat(event.time)}*.` : 'Failed to accept invite, maybe you already answered all invites?';
-    await this.slackRepository.sendMarkdown(userId, message);
+    const message = event ? `Successfully *accepted* event with ${channelDate(event.channelId, event.time)}.` : 'Failed to accept invite, maybe you already answered all invites?';
+    await this.slackRepository.sendMarkdownToUser(userId, message);
   }
 
   async sendDeclineResult(event: Event | undefined, userId: string) {
-    const message = event ? `Successfully *declined* event on *${dateFormat(event.time)}*.` : 'Failed to decline invite, maybe you already answered all invites?';
-    await this.slackRepository.sendMarkdown(userId, message);
+    const message = event ? `Successfully *declined* event with ${channelDate(event.channelId, event.time)}.` : 'Failed to decline invite, maybe you already answered all invites?';
+    await this.slackRepository.sendMarkdownToUser(userId, message);
   }
 
   async sendFailedEventNotification(event: Event, involvedUserIds: string[]) {
     const acceptedUsers = await this.slackRepository.getUsersDetails(event.accepted);
-    const message = `Event scheduled for *${dateFormat(event.time)}* was cancelled due to not enough people accepting on time :cry:\n\nUsers (*${acceptedUsers.map((u) => u.name!).join(', ')})* accepted the invite, feel free to reach out to them for support!`;
+    const message = `Event scheduled for ${channelDate(event.channelId, event.time)} was cancelled due to not enough people accepting on time :cry:\n\nUsers (*${acceptedUsers.map((u) => u.name!).map(makeAt).join(', ')})* accepted the invite, feel free to reach out to them for support!`;
     await Promise.all(
-      involvedUserIds.map((userId) => this.slackRepository.sendMarkdown(userId, message)),
+      involvedUserIds.map((userId) => this.slackRepository.sendMarkdownToUser(userId, message)),
     );
+  }
+
+  async sendOptedOut(userId: string) {
+    await this.slackRepository.sendMessage(userId, 'Successfully opted out and declined pending invitations!');
   }
 
   static async sendCommandList(say: SayFn) {

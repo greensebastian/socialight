@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "nodemon --watch './**/*.ts' --exec ts-node src/app.ts --inspect",
-    "start": "node -r ts-node/register src/app.ts",
-    "inspect": "node --inspect -r ts-node/register src/app.ts"
+    "watch": "nodemon --watch './**/*.ts' --exec ts-node src/server.ts --inspect",
+    "start": "node -r ts-node/register src/server.ts",
+    "inspect": "node --inspect -r ts-node/register src/server.ts"
   },
   "repository": {
     "type": "git",

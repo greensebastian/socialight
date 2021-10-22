@@ -16,7 +16,7 @@ configDotenv();
 const slack = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
-  socketMode: true,
+  socketMode: false,
   appToken: process.env.SLACK_APP_TOKEN,
 });
 
@@ -219,6 +219,8 @@ const registerHandlers = async (config: Config) => {
 
 slack.message(async ({ message, say }) => {
   if (message.channel_type !== 'im') return;
+
+  // TODO handle event retries from Slack?
 
   const text = String((message as any).text);
 
