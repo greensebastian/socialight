@@ -11,6 +11,8 @@ import DateService from './services/dateService';
 import PlanningService from './services/planningService';
 import RandomService from './services/randomService';
 
+this will faild build
+
 configDotenv();
 
 const slack = new App({
