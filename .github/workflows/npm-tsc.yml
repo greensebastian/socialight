@@ -23,9 +23,10 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: Install dependencies
-      run: |
-        npm install
+      run: npm install
+
+    - name: Run ESLint
+      run: eslint . --ext .js,.jsx,.ts,.tsx
 
     - name: Build
-      run: |
-        tsc
+      run: tsc
