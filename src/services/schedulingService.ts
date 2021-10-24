@@ -8,9 +8,9 @@ import EventService from './eventService';
 import PlanningService from './planningService';
 import SlackService from './slackService';
 
-const EVERY_1_JAN = '0 0 12 1 1 ? *';
+// const EVERY_1_JAN = '0 0 12 1 1 ? *';
 const EVERY_5_MIN = '*/5 * * * *';
-const EVERY_1_MIN = '*/1 * * * *';
+// const EVERY_1_MIN = '*/1 * * * *';
 
 class SchedulingService {
   private running = false;
