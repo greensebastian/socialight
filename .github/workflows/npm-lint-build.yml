@@ -1,4 +1,4 @@
-name: NodeJS with tsc
+name: Lint and build
 
 on:
   push:
@@ -22,11 +22,11 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Install dependencies
+    - name: npm install
       run: npm install
 
     - name: Run ESLint
       run: npm run lint
 
-    - name: Build
+    - name: Build with tsc
       run: tsc
