@@ -41,7 +41,7 @@ class SlackService {
 
   constructor(private slackRepository: SlackRepository, private dateService: DateService) {}
 
-  private info = async () => `This bot invites people at random to join up and have pizza together. When an event is successfully planned, it is announced to ${makeChannel(await this.announcementChannelId())}\n\nSend 'help' to list available commands!`;
+  private info = async () => `This bot invites people at random to join up and have pizza together. When an event is successfully planned, it is announced to ${makeChannel(await this.announcementChannelId())}\n\nSend 'help' to list available commands!\n\nVisit the github page to contribute or look at usage examples! https://github.com/greensebastian/socialight`;
 
   async sendInvite(invite: Invite, channelId: string, date: Date) {
     await this.slackRepository.sendMarkdownToUser(invite.userId, `You've been invited to have pizza with ${channelDate(channelId, date)}!\n\n${respondMkdwn}!\n\n${await this.info()}`);
