@@ -110,3 +110,6 @@ state
 
 # VSCode
 .vscode
+
+# Log
+log.txt
