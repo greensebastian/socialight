@@ -6,7 +6,7 @@ It runs standalone on any server capable of hosting node apps, and will automati
 
 # Usage
 
-Communication with the bot happens through direct messages with the bot user. It listens to a couple pre-defined commands, and will use the user id to determine the context of the command. As a rule of thumb, the bot should respond to **all** commands one way or another to let the user now the command was at the very least received.
+Communication with the bot happens through direct messages with the bot user. It listens to a couple of predefined commands, and will use the user id to determine the context of the command. As a rule of thumb, the bot should respond to **all** commands one way or another to let the user know the command was at the very least received.
 
 ## Commands
 

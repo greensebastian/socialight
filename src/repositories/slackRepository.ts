@@ -62,13 +62,10 @@ class SlackRepository {
     return channel;
   }
 
-  async getUsersInChannel(channelId: string) {
+  async getUsersInChannel(channelId: string): Promise<string[]> {
     const userIds = await this.getChannelMemberIds(channelId);
 
-    // We need to fetch all user details to ensure none of the users are bots
-    const users = await this.getUsersDetails(Array.from(userIds));
-
-    return users.map((user) => user.id!);
+    return Array.from(userIds);
   }
 
   private async getChannelMemberIds(channelId: string) {
@@ -88,6 +85,10 @@ class SlackRepository {
     return memberIds;
   }
 
+  async getUserDetails(userId: string) {
+    return (await this.getUsersDetails([userId]))[0];
+  }
+
   async getUsersDetails(userIds: string[]) {
     const nonCachedUserIds: string[] = [];
     const cachedUserIds: string[] = [];
@@ -101,9 +102,7 @@ class SlackRepository {
 
     const userDetailsResponse = await Promise.all(nonCachedUserIds.map((userId) => this.slack.client
       .users.info({ user: userId })));
-    const userDetails = userDetailsResponse
-      .map((res) => res.user!)
-      .filter((user) => !user.is_bot && !user.is_app_user);
+    const userDetails = userDetailsResponse.map((res) => res.user!);
 
     userDetails.forEach((user) => {
       this.cachedUsers.set(user.id!, user);
