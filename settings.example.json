@@ -1,0 +1,12 @@
+[
+  {
+    "channelNames": ["<channel-1>","<channel-2>"],
+    "participants": 1,
+    "announcementsChannelName": "<announcements-1>"
+  },
+  {
+    "channelNames": ["<channel-3>"],
+    "participants": 4,
+    "announcementsChannelName": "<announcements-2>"
+  }
+]

@@ -110,3 +110,6 @@ state
 
 # VSCode
 .vscode
+
+# Settings
+settings.json
