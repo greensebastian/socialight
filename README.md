@@ -22,7 +22,7 @@ When a person is invited to an event, they will receive a dm from the bot with i
 
 ## Accepting and declining
 
-After being invited to an event, a user can accept or decline events one at a time through the accept and decline commands. These commands will act on the **NEXT** event the user has been invited to and has not yet responded to. You can't change your respons to an invite after sending accept or decline. If you have two pending invites, you should respond to them sequentially in chronological order.
+After being invited to an event, a user can accept or decline events one at a time through the accept and decline commands. These commands will act on the **NEXT** event the user has been invited to and has not yet responded to. You can't change your response to an invite after sending accept or decline. If you have two pending invites, you should respond to them sequentially in chronological order.
 
 ![accept and decline](https://imgur.com/0fJQKYv.png)
 
@@ -79,7 +79,7 @@ Can be found under Settings -> Basic Information -> App Credentials
 
 * SLACK_APP_TOKEN
 
-Starts with *xapp-* and is found under Settings -> Basic Information -> App-Level Tokens. This token is only required if you want to use socket mode, which can be benefitial during testing and development.
+Starts with *xapp-* and is found under Settings -> Basic Information -> App-Level Tokens. This token is only required if you want to use socket mode, which can be beneficial during testing and development.
 
 ### Events
 
