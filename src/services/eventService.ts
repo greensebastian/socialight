@@ -171,7 +171,12 @@ class EventService {
   }
 
   static sortByDate(events: Event[]) {
-    events.sort((a, b) => (a.time <= b.time ? -1 : 1));
+    events.sort((a, b) => {
+      if (a.time < b.time) return -1;
+      if (a.time > b.time) return 1;
+      if (a.id < b.id) return -1;
+      return 1;
+    });
   }
 }
 

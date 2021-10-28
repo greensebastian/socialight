@@ -1,8 +1,6 @@
 import { App, KnownEventFromType, SayFn } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
 import Config from '@models/config';
-import { existsSync, readFileSync } from 'fs';
-import { createSecureContext } from 'tls';
 import FileRepository from './repositories/fileRepository';
 import EventService from './services/eventService';
 import SlackService from './services/slackService';
@@ -12,6 +10,7 @@ import ConfigRepository from './repositories/configRepository';
 import DateService from './services/dateService';
 import PlanningService from './services/planningService';
 import RandomService from './services/randomService';
+import setupSecureCtx from './util/certUtil';
 
 configDotenv();
 
@@ -232,46 +231,6 @@ slack.message(async ({ message, say }) => {
     if (await handler(text, say, message)) return;
   }
 });
-
-const tryReadFile = (path: string | undefined) => {
-  if (!path || !existsSync(path)) return undefined;
-  return readFileSync(path, 'utf8');
-};
-
-const getCertInfo = () => {
-  const privateKey = tryReadFile(process.env.TLS_PRIVKEY);
-  const certificate = tryReadFile(process.env.TLS_CERT);
-  const ca = tryReadFile(process.env.TLS_CA);
-
-  return privateKey && privateKey.length && certificate && certificate.length && ca && ca.length ? {
-    privateKey,
-    certificate,
-    ca,
-  } : undefined;
-};
-
-const createSecureCtx = () => {
-  const certInfo = getCertInfo();
-  if (!certInfo) return undefined;
-
-  const ctx = createSecureContext({
-    key: certInfo.privateKey,
-    cert: certInfo.certificate,
-    ca: certInfo.ca,
-  });
-
-  return ctx;
-};
-
-const setupSecureCtx = () => {
-  let ctx = createSecureCtx();
-
-  setInterval(() => {
-    ctx = createSecureCtx();
-  }, 1000);
-
-  return () => ctx;
-};
 
 (async () => {
   // Start your app

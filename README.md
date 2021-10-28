@@ -39,7 +39,7 @@ Can be found under Settings -> Basic Information -> App Credentials
 
 * SLACK_APP_TOKEN
 
-Starts with *xapp-* and is found under Settings -> Basic Information -> App-Level Tokens
+Starts with *xapp-* and is found under Settings -> Basic Information -> App-Level Tokens. This token is only required if you want to use socket mode, which can be benefitial during testing and development.
 
 ### Events
 
@@ -55,17 +55,32 @@ Name of channel where the bot announces shared information, such as successfully
 
 Number of participants per event.
 
+### TLS
+
+In order to support HTTPS when using the events API, you need a valid certificate and private key that the node server can use.
+
+* TLS_PRIVKEY
+
+.pem file containing the private key
+
+* TLS_CERT
+
+.pem file containing the public certificate
+
 ## Slack app setup
 
 All configuration values needed for connecting with slack are provided as environment variables. Refer to the .env.example file for which ones are needed to run the bot.
 
-### Socket mode
+The bot manifest file can be used to quickly get the app configured in the slack interface.
 
-The app runs in socket mode, because this allows for much easier development. Just start the app, and it will find and connect to accessible workspaces through the use of bolt and bot secret configurations.
+### Event subscription
+
+The app needs to expose an endpoint which the slack service can use to post events.
 
 ### Required scopes:
 * channels:read
 * chat:write
+* groups:read
 * im:history
 * im:write
 * users:read

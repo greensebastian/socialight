@@ -20,7 +20,7 @@ class SlackRepository {
 
     while (moreToFetch) {
       const conversationsResponse = await this.slack.client.conversations.list({
-        types: 'public_channel', exclude_archived: true, limit: 1000, cursor,
+        types: 'public_channel,private_channel', exclude_archived: true, limit: 1000, cursor,
       });
 
       channels = channels.concat(conversationsResponse.channels!);
