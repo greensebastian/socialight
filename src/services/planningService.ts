@@ -110,9 +110,7 @@ class PlanningService {
     await this.eventService.inviteToEvent(event, userIds);
   }
 
-  private async getUserIdsToInvite(
-    channelId: string, event: Event | undefined = undefined,
-  ): Promise<string[]> {
+  private async getUserIdsToInvite(channelId: string, event: Event | undefined = undefined): Promise<string[]> {
     const optedOut = await this.stateRepository.getOptedOut();
 
     const pending = event?.invites?.map((invite) => invite.userId) || [];

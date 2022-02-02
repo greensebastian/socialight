@@ -59,7 +59,7 @@ class FileRepository implements IStateRepository {
   }
 
   async getOptedOut(): Promise<string[]> {
-    return await this.get<string[]>(KEY_OPT_OUT) || [];
+    return (await this.get<string[]>(KEY_OPT_OUT)) || [];
   }
 
   async setOptedOut(optedOut: string[]): Promise<void> {
@@ -67,7 +67,7 @@ class FileRepository implements IStateRepository {
   }
 
   async getEvents(): Promise<Event[]> {
-    return await this.get<Event[]>(KEY_EVENTS) || [];
+    return (await this.get<Event[]>(KEY_EVENTS)) || [];
   }
 
   async setEvents(events: Event[]): Promise<void> {

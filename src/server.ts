@@ -12,7 +12,10 @@ import PlanningService from './services/planningService';
 import RandomService from './services/randomService';
 import setupSecureCtx from './util/certUtil';
 
-configDotenv();
+const env = process.env.NODE_ENV || 'development';
+const envPath = env === 'production' ? '.env' : '.env.development';
+
+configDotenv({ path: envPath });
 
 const slack = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -34,7 +37,12 @@ const randomService = new RandomService();
 const eventService = new EventService(stateRepository, dateService);
 
 const planningService = new PlanningService(
-  stateRepository, dateService, randomService, slackRepository, configRepository, eventService,
+  stateRepository,
+  dateService,
+  randomService,
+  slackRepository,
+  configRepository,
+  eventService,
 );
 
 const slackService = new SlackService(slackRepository, dateService);
@@ -50,14 +58,24 @@ const schedulingService = new SchedulingService(
 
 const getUserId = (message: KnownEventFromType<'message'>) => String((message as any).user);
 
-type Handler = (text: string, say: SayFn, message: KnownEventFromType<'message'>) => Promise<boolean>;
+type Handler = (
+  text: string,
+  say: SayFn,
+  message: KnownEventFromType<'message'>
+) => Promise<boolean>;
 
 const channelsHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'channels') return false;
 
   const channels = await slackRepository.getChannels();
-  const announcementText = channels.announcementsChannel ? `#${channels.announcementsChannel.name} to announce to` : 'no announcement channel';
-  await say(`Found ${announcementText} and channels ${channels.poolChannels.map((ch) => `#${ch.name}`).join(', ')} to pick participants from!`);
+  const announcementText = channels.announcementsChannel
+    ? `#${channels.announcementsChannel.name} to announce to`
+    : 'no announcement channel';
+  await say(
+    `Found ${announcementText} and channels ${channels.poolChannels
+      .map((ch) => `#${ch.name}`)
+      .join(', ')} to pick participants from!`,
+  );
   return true;
 };
 
@@ -69,7 +87,11 @@ const userHandler: Handler = async (text, say) => {
   const users = await slackRepository.getUsersInChannel(firstChannel.id!);
   const userDetails = await slackRepository.getUsersDetails(users);
 
-  await say(`Found ${userDetails.length} users in ${firstChannel.name}: ${userDetails.map((user) => user.real_name).join(', ')}.`);
+  await say(
+    `Found ${userDetails.length} users in ${firstChannel.name}: ${userDetails
+      .map((user) => user.real_name)
+      .join(', ')}.`,
+  );
   return true;
 };
 
@@ -80,9 +102,15 @@ const planHandler: Handler = async (text, say) => {
   const event = await planningService.createEvent(channel.id!);
 
   const invitedUserIds = event!.invites.map((inv) => inv.userId);
-  const invitedUserDetails = await slackRepository.getUsersDetails(invitedUserIds);
+  const invitedUserDetails = await slackRepository.getUsersDetails(
+    invitedUserIds,
+  );
   const invitedUsers = invitedUserDetails.map((u) => u.real_name);
-  await say(`Scheduled a new event for ${channel.name} on ${event.time.toUTCString()} for users ${invitedUsers.join(', ')}`);
+  await say(
+    `Scheduled a new event for ${
+      channel.name
+    } on ${event.time.toUTCString()} for users ${invitedUsers.join(', ')}`,
+  );
   return true;
 };
 
@@ -101,7 +129,8 @@ const optOutHandler: Handler = async (text, say, message) => {
     await planningService.optOut(userId);
     await say('Opted out!');
     return true;
-  } if (text.toLowerCase() === 'opt in') {
+  }
+  if (text.toLowerCase() === 'opt in') {
     await planningService.optIn(userId);
     await say('Opted in!');
     return true;
