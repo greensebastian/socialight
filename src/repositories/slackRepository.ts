@@ -2,7 +2,7 @@ import { App } from '@slack/bolt';
 import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse';
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
-import { ConversationsOpenResponse } from '@slack/web-api';
+import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
 
 class SlackRepository {
   private cachedUsers = new Map<string, User>();
@@ -149,6 +149,11 @@ class SlackRepository {
     await this.sendMarkdown(conversation.channel!.id!, markdown);
   }
 
+  async sendBlocksToUser(userId: string, blocks: KnownBlock[]) {
+    const conversation = await this.openUserConversation(userId);
+    await this.sendBlocks(conversation.channel!.id!, blocks);
+  }
+
   private async sendMarkdown(channelId: string, markdown: string) {
     const blocks = [
       {
@@ -163,6 +168,21 @@ class SlackRepository {
       channel: channelId,
       blocks,
       text: markdown,
+    });
+  }
+
+  async sendBlocks(channelId: string, blocks: KnownBlock[]) {
+    await this.slack.client.chat.postMessage({
+      channel: channelId,
+      blocks,
+    });
+  }
+
+  async sendEphemeralBlocks(channelId: string, userId: string, blocks: KnownBlock[]) {
+    await this.slack.client.chat.postEphemeral({
+      channel: channelId,
+      user: userId,
+      blocks,
     });
   }
 
