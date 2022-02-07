@@ -35,8 +35,9 @@ class SlackService {
 
   private async announcementChannelId() {
     if (!this.cachedAnnouncementChannelId) {
-      this.cachedAnnouncementChannelId = (await this.slackRepository.getChannels())
-        .announcementsChannel?.id;
+      this.cachedAnnouncementChannelId = (
+        await this.slackRepository.getChannels()
+      ).announcementsChannel?.id;
     }
 
     return this.cachedAnnouncementChannelId!;

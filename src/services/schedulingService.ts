@@ -76,10 +76,11 @@ class SchedulingService {
   private async removeFailedEvents() {
     const failedEvents = await this.planningService.removeFailedEvents();
 
-    await Promise.all(failedEvents.map(async (event) => {
-      const participantsToNotify = event.accepted.concat(event.invites.map((inv) => inv.userId));
-      await this.slackService.sendFailedEventNotification(event, participantsToNotify);
-    }));
+    await Promise.all(
+      failedEvents.map(async (event) => {
+        await this.slackService.sendFailedEventNotification(event);
+      }),
+    );
   }
 
   private async planNewEvents() {
@@ -138,19 +139,24 @@ class SchedulingService {
   }
 
   private async shouldSendInvite(invite: Invite): Promise<boolean> {
-    return await this.isInActiveHours() && !invite.inviteSent;
+    return (await this.isInActiveHours()) && !invite.inviteSent;
   }
 
   private static shouldExpire(invite: Invite): boolean {
-    return !!invite.reminderSent && dayjs(invite.inviteSent).add(1, 'day').isBefore(dayjs(invite.reminderSent));
+    return (
+      !!invite.reminderSent &&
+      dayjs(invite.inviteSent).add(1, 'day').isBefore(dayjs(invite.reminderSent))
+    );
   }
 
   private async shouldSendReminder(invite: Invite): Promise<boolean> {
     const latestReminder = dayjs(invite.reminderSent || '1970-01-01');
 
-    return await this.isInActiveHours()
-      && !!invite.inviteSent
-      && latestReminder.isBefore(dayjs(this.dateService.now()).subtract(2, 'hour'));
+    return (
+      (await this.isInActiveHours()) &&
+      !!invite.inviteSent &&
+      latestReminder.isBefore(dayjs(this.dateService.now()).subtract(2, 'hour'))
+    );
   }
 }
 

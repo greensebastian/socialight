@@ -24,7 +24,9 @@ export const getInvitationBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)}`,
+          text: `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(
+            date,
+          )}`,
         },
       ],
     } as SectionBlock,
@@ -61,7 +63,9 @@ export const getReminderBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `Reminder: You haven't responded to the invite to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)}`,
+          text: `Reminder: You haven't responded to the invite to have pizza with ${getChannelMd(
+            channelId,
+          )} on ${getDateMd(date)}`,
         },
       ],
     } as SectionBlock,
@@ -123,7 +127,9 @@ export const getAcceptResponseBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `You've *accepted* the invite for pizza with ${getChannelMd(channelId)} on ${getDateMd(date)}. Have fun!`,
+          text: `You've *accepted* the invite for pizza with ${getChannelMd(
+            channelId,
+          )} on ${getDateMd(date)}. Have fun!`,
         },
       ],
     } as SectionBlock,
@@ -137,7 +143,9 @@ export const getDeclineResponseBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `You've *declined* the invite for pizza with ${getChannelMd(channelId)} on ${getDateMd(date)}. Hope to see some other time!`,
+          text: `You've *declined* the invite for pizza with ${getChannelMd(
+            channelId,
+          )} on ${getDateMd(date)}. Hope to see some other time!`,
         },
       ],
     } as SectionBlock,
@@ -151,7 +159,9 @@ export const getEventCancelledBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `The event planned for ${getChannelMd(channelId)} on ${getDateMd(date)} was cancelled due to not enough people accepting the invite. :cry:`,
+          text: `The event planned for ${getChannelMd(channelId)} on ${getDateMd(
+            date,
+          )} was cancelled due to not enough people accepting the invite. :cry:`,
         },
       ],
     } as SectionBlock,
@@ -165,7 +175,7 @@ export const getOptedOutBlock = () => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: 'Got it! You won\'t receive any more invites. You can always opt-in by typing /socialight',
+          text: "Got it! You won't receive any more invites. You can always opt-in by typing /socialight",
         },
       ],
     } as SectionBlock,
@@ -204,7 +214,9 @@ export const getInfoBlock = (optedOut: boolean) => ({
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: optedOut ? "You're currently opted out of future events. You can opt-in here." : 'Too many invitations? You can opt-out of all future events. You can always opt-in again by typing */socialight.*',
+        text: optedOut
+          ? "You're currently opted out of future events. You can opt-in here."
+          : 'Too many invitations? You can opt-out of all future events. You can always opt-in again by typing */socialight.*',
       },
     } as SectionBlock,
     {
@@ -212,21 +224,21 @@ export const getInfoBlock = (optedOut: boolean) => ({
       elements: [
         optedOut
           ? {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: 'Opt-in',
-            },
-            action_id: 'optIn',
-          }
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: 'Opt-in',
+              },
+              action_id: 'optIn',
+            }
           : {
-            type: 'button',
-            text: {
-              type: 'plain_text',
-              text: 'Opt-out',
+              type: 'button',
+              text: {
+                type: 'plain_text',
+                text: 'Opt-out',
+              },
+              action_id: 'optOut',
             },
-            action_id: 'optOut',
-          },
       ],
     } as ActionsBlock,
   ],

@@ -57,9 +57,7 @@ class SlackRepository {
     }
 
     const channels = await this.getChannels();
-    return channels.poolChannels.find(
-      (channel) => channel.name?.toLowerCase() === channelName,
-    );
+    return channels.poolChannels.find((channel) => channel.name?.toLowerCase() === channelName);
   }
 
   async getChannelById(channelId: string): Promise<Channel | undefined> {
@@ -118,14 +116,10 @@ class SlackRepository {
       this.cachedUsers.set(user.id!, user);
     });
 
-    return userDetails.concat(
-      cachedUserIds.map((id) => this.cachedUsers.get(id)!),
-    );
+    return userDetails.concat(cachedUserIds.map((id) => this.cachedUsers.get(id)!));
   }
 
-  private async openUserConversation(
-    userId: string,
-  ): Promise<ConversationsOpenResponse> {
+  private async openUserConversation(userId: string): Promise<ConversationsOpenResponse> {
     return this.slack.client.conversations.open({ users: userId });
   }
 

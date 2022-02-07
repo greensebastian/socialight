@@ -10,10 +10,12 @@ const getCertInfo = () => {
   const privateKey = tryReadFile(process.env.TLS_PRIVKEY);
   const certificate = tryReadFile(process.env.TLS_CERT);
 
-  return privateKey && privateKey.length && certificate && certificate.length ? {
-    privateKey,
-    certificate,
-  } : undefined;
+  return privateKey && privateKey.length && certificate && certificate.length
+    ? {
+        privateKey,
+        certificate,
+      }
+    : undefined;
 };
 
 const createSecureCtx = () => {

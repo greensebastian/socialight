@@ -45,7 +45,7 @@ const planningService = new PlanningService(
   eventService,
 );
 
-const slackService = new SlackService(slackRepository, dateService);
+const slackService = new SlackService(slackRepository);
 
 const schedulingService = new SchedulingService(
   planningService,
@@ -56,12 +56,13 @@ const schedulingService = new SchedulingService(
   configRepository,
 );
 
-const getUserId = (message: KnownEventFromType<'message'>) => String((message as any).user);
+const getUserId = (message: KnownEventFromType<'message'>) =>
+  String((message as any).user);
 
 type Handler = (
   text: string,
   say: SayFn,
-  message: KnownEventFromType<'message'>
+  message: KnownEventFromType<'message'>,
 ) => Promise<boolean>;
 
 const channelsHandler: Handler = async (text, say) => {
@@ -127,12 +128,12 @@ const optOutHandler: Handler = async (text, say, message) => {
   const userId = getUserId(message);
   if (text.toLowerCase() === 'opt out') {
     await planningService.optOut(userId);
-    await say('Opted out!');
+    await slackService.sendOptedOut(userId);
     return true;
   }
   if (text.toLowerCase() === 'opt in') {
     await planningService.optIn(userId);
-    await say('Opted in!');
+    await slackService.sendOptedIn(userId);
     return true;
   }
 
@@ -209,7 +210,6 @@ const tickHandler: Handler = async (text) => {
 
 const fallbackHandler: Handler = async (text, say) => {
   await say(`I dont understand what you mean by '${text}' :exploding_head:`);
-  await SlackService.sendCommandList(say);
   return true;
 };
 
@@ -270,7 +270,7 @@ slack.message(async ({ message, say }) => {
   if (getCtx()) {
     console.log('TLS settings were available during startup!');
   } else {
-    console.log('TLS was not found on startup!');
+    console.warn('TLS was not found on startup!');
   }
 
   await slack.start(port, {

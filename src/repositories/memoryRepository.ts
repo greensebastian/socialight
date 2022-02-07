@@ -30,7 +30,7 @@ class MemoryRepository implements IStateRepository {
   }
 
   async getOptedOut(): Promise<string[]> {
-    return await this.get<string[]>(KEY_OPT_OUT) || [];
+    return (await this.get<string[]>(KEY_OPT_OUT)) || [];
   }
 
   async setOptedOut(optedOut: string[]): Promise<void> {
@@ -38,7 +38,7 @@ class MemoryRepository implements IStateRepository {
   }
 
   async getEvents(): Promise<Event[]> {
-    return await this.get<Event[]>(KEY_EVENTS) || [];
+    return (await this.get<Event[]>(KEY_EVENTS)) || [];
   }
 
   async setEvents(events: Event[]): Promise<void> {
@@ -47,9 +47,7 @@ class MemoryRepository implements IStateRepository {
       for (const event of parsed) {
         event.time = new Date(event.time);
         for (const invite of event.invites) {
-          invite.inviteSent = invite.inviteSent
-            ? new Date(invite.inviteSent)
-            : invite.inviteSent;
+          invite.inviteSent = invite.inviteSent ? new Date(invite.inviteSent) : invite.inviteSent;
           invite.reminderSent = invite.reminderSent
             ? new Date(invite.reminderSent)
             : invite.reminderSent;

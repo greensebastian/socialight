@@ -1,8 +1,6 @@
 import { Event } from '@models/event';
 import { IStateRepository } from 'src/core/interface';
-import {
-  existsSync, mkdirSync, readFileSync, writeFileSync,
-} from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 
 const KEY_EVENTS = 'EVENTS';
 const KEY_OPT_OUT = 'OPT_OUT';
@@ -19,9 +17,7 @@ class FileRepository implements IStateRepository {
       for (const event of parsed) {
         event.time = new Date(event.time);
         for (const invite of event.invites) {
-          invite.inviteSent = invite.inviteSent
-            ? new Date(invite.inviteSent)
-            : invite.inviteSent;
+          invite.inviteSent = invite.inviteSent ? new Date(invite.inviteSent) : invite.inviteSent;
           invite.reminderSent = invite.reminderSent
             ? new Date(invite.reminderSent)
             : invite.reminderSent;

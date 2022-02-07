@@ -4,10 +4,7 @@ import { Guid } from 'guid-typescript';
 import { IStateRepository } from 'src/core/interface';
 
 class EventService {
-  constructor(
-    private stateRepository: IStateRepository,
-    private dateService: DateService,
-  ) {}
+  constructor(private stateRepository: IStateRepository, private dateService: DateService) {}
 
   /**
    * Find all created events
@@ -28,9 +25,12 @@ class EventService {
    */
   async getUserEvents(userId: string, expired: boolean = false): Promise<Event[]> {
     const events = await this.getAllEvents(expired);
-    const userEvents = events.filter((event) => event.invites.some((inv) => inv.userId === userId)
-      || event.accepted.includes(userId)
-      || event.declined.includes(userId));
+    const userEvents = events.filter(
+      (event) =>
+        event.invites.some((inv) => inv.userId === userId) ||
+        event.accepted.includes(userId) ||
+        event.declined.includes(userId),
+    );
     return userEvents;
   }
 
@@ -62,7 +62,10 @@ class EventService {
    * @param userId Slack ID of user to accept
    * @returns true if an invitation was successfully accepted
    */
-  async acceptInvitation(userId: string, channelId: string | undefined = undefined): Promise<Event | undefined> {
+  async acceptInvitation(
+    userId: string,
+    channelId: string | undefined = undefined,
+  ): Promise<Event | undefined> {
     const events = await this.getAllEvents();
     const event = await this.findEventToRespondTo(events, userId, channelId);
     if (!event) return undefined;
@@ -79,7 +82,10 @@ class EventService {
    * @param userId Slack ID of user to decline
    * @returns true if an invitation was successfully declined
    */
-  async declineInvitation(userId: string, channelId: string | undefined = undefined): Promise<Event | undefined> {
+  async declineInvitation(
+    userId: string,
+    channelId: string | undefined = undefined,
+  ): Promise<Event | undefined> {
     const events = await this.getAllEvents();
     const event = await this.findEventToRespondTo(events, userId, channelId);
     if (!event) return undefined;
@@ -105,20 +111,6 @@ class EventService {
     newEvent.declined.push(userId);
     await this.updateEvent(newEvent);
     return newEvent;
-  }
-
-  async declineAllInvitations(userId: string): Promise<Event[]> {
-    const events = await this.getUserEvents(userId);
-    const pendingEvents = events.filter(
-      (event) => event.invites.map((invite) => invite.userId).includes(userId),
-    );
-
-    const updatedEvents: Event[] = [];
-    for (const event of pendingEvents) {
-      const updated = await this.declineEvent(event, userId);
-      updatedEvents.push(updated);
-    }
-    return updatedEvents;
   }
 
   async updateEvent(newEvent: Event) {
@@ -147,9 +139,12 @@ class EventService {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  private async findEventToRespondTo(events: Event[], userId: string, channelId: string | undefined): Promise<Event | undefined> {
+  private async findEventToRespondTo(
+    events: Event[],
+    userId: string,
+    channelId: string | undefined,
+  ): Promise<Event | undefined> {
     EventService.sortByDate(events);
-
     if (channelId) {
       return events.find((event) => event.channelId === channelId);
     }
