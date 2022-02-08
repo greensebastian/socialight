@@ -49,7 +49,6 @@ class PlanningService {
     const optedOut = await this.stateRepository.getOptedOut();
     if (!optedOut.includes(userId)) {
       await this.stateRepository.setOptedOut(optedOut.concat(userId));
-      return this.eventService.declineAllInvitations(userId);
     }
     return [];
   }

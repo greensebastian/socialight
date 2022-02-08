@@ -1,8 +1,10 @@
 import { Event, Invite } from '@models/event';
 import SlackRepository from '@repositories/slackRepository';
 import {
+  getAcceptErrorResponseBlock,
   getAcceptResponseBlock,
   getAnnouncementBlock,
+  getDeclineErrorResponseBlock,
   getDeclineResponseBlock,
   getEventCancelledBlock,
   getInvitationBlock,
@@ -47,12 +49,22 @@ class SlackService {
     await this.slackRepository.inviteToChannel(userIds, await this.announcementChannelId());
   }
 
-  async sendAcceptResult(event: Event, userId: string) {
+  async sendAcceptResult(event: Event | undefined, userId: string) {
+    if (event == null) {
+      const { blocks } = getAcceptErrorResponseBlock();
+      await this.slackRepository.sendBlocksToUser(userId, blocks);
+      return;
+    }
     const { blocks } = getAcceptResponseBlock(event.channelId, event.time);
     await this.slackRepository.sendEphemeralBlocks(event.channelId, userId, blocks);
   }
 
-  async sendDeclineResult(event: Event, userId: string) {
+  async sendDeclineResult(event: Event | undefined, userId: string) {
+    if (event == null) {
+      const { blocks } = getDeclineErrorResponseBlock();
+      await this.slackRepository.sendBlocksToUser(userId, blocks);
+      return;
+    }
     const { blocks } = getDeclineResponseBlock(event.channelId, event.time);
     await this.slackRepository.sendEphemeralBlocks(event.channelId, userId, blocks);
   }

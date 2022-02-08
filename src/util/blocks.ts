@@ -224,22 +224,50 @@ export const getInfoBlock = (optedOut: boolean) => ({
       elements: [
         optedOut
           ? {
-              type: 'button',
-              text: {
-                type: 'plain_text',
-                text: 'Opt-in',
-              },
-              action_id: 'optIn',
-            }
-          : {
-              type: 'button',
-              text: {
-                type: 'plain_text',
-                text: 'Opt-out',
-              },
-              action_id: 'optOut',
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: 'Opt-in',
             },
+            action_id: 'optIn',
+          }
+          : {
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: 'Opt-out',
+            },
+            action_id: 'optOut',
+          },
       ],
     } as ActionsBlock,
+  ],
+});
+
+export const getAcceptErrorResponseBlock = () => ({
+  blocks: [
+    {
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: 'Something went wrong while trying to accept an event :exploding_head:',
+        },
+      ],
+    } as SectionBlock,
+  ],
+});
+
+export const getDeclineErrorResponseBlock = () => ({
+  blocks: [
+    {
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: 'Something went wrong while trying to decline an event :exploding_head:',
+        },
+      ],
+    } as SectionBlock,
   ],
 });

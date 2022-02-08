@@ -56,9 +56,6 @@ const schedulingService = new SchedulingService(
   configRepository,
 );
 
-const getUserId = (message: KnownEventFromType<'message'>) =>
-  String((message as any).user);
-
 type Handler = (
   text: string,
   say: SayFn,
@@ -103,9 +100,7 @@ const planHandler: Handler = async (text, say) => {
   const event = await planningService.createEvent(channel.id!);
 
   const invitedUserIds = event!.invites.map((inv) => inv.userId);
-  const invitedUserDetails = await slackRepository.getUsersDetails(
-    invitedUserIds,
-  );
+  const invitedUserDetails = await slackRepository.getUsersDetails(invitedUserIds);
   const invitedUsers = invitedUserDetails.map((u) => u.real_name);
   await say(
     `Scheduled a new event for ${
@@ -116,54 +111,12 @@ const planHandler: Handler = async (text, say) => {
 };
 
 const clearHandler: Handler = async (text, say) => {
-  if (text.toLowerCase() !== 'clear') return false;
+  const actionId = 'clear';
+  if (actionId !== 'clear') return false;
 
   await stateRepository.setEvents([]);
   await stateRepository.setOptedOut([]);
   await say('Cleared all planned events and opt-outs');
-  return true;
-};
-
-const optOutHandler: Handler = async (text, say, message) => {
-  const userId = getUserId(message);
-  if (text.toLowerCase() === 'opt out') {
-    await planningService.optOut(userId);
-    await slackService.sendOptedOut(userId);
-    return true;
-  }
-  if (text.toLowerCase() === 'opt in') {
-    await planningService.optIn(userId);
-    await slackService.sendOptedIn(userId);
-    return true;
-  }
-
-  return false;
-};
-
-const acceptHandler: Handler = async (text, say, message) => {
-  if (text.toLowerCase() !== 'accept') return false;
-
-  const userId = getUserId(message);
-  const event = await eventService.acceptInvitation(userId);
-  await slackService.sendAcceptResult(event, userId);
-  return true;
-};
-
-const declineHandler: Handler = async (text, say, message) => {
-  if (text.toLowerCase() !== 'decline') return false;
-
-  const userId = getUserId(message);
-  const res = await eventService.declineInvitation(userId);
-  await slackService.sendDeclineResult(res, userId);
-  return true;
-};
-
-const eventsHandler: Handler = async (text, say, message) => {
-  if (text.toLowerCase() !== 'events') return false;
-
-  const userId = getUserId(message);
-  const events = await eventService.getUserEvents(userId);
-  await slackService.sendInviteList(events, userId, say);
   return true;
 };
 
@@ -173,21 +126,6 @@ const dumpHandler: Handler = async (text, say) => {
   const events = await stateRepository.getEvents();
   await say('Outputting raw state data:');
   await say(JSON.stringify(events));
-  return true;
-};
-
-const messageHandler: Handler = async (text, _, message) => {
-  if (text.toLowerCase() !== 'message') return false;
-
-  const user = getUserId(message);
-  await slackRepository.sendMessage(user, 'Hello World!');
-  return true;
-};
-
-const echoHandler: Handler = async (text, say) => {
-  if (!text.toLowerCase().startsWith('echo ')) return false;
-
-  await say(text.substr(5));
   return true;
 };
 
@@ -219,19 +157,11 @@ const devHandlers: Handler[] = [
   planHandler,
   clearHandler,
   dumpHandler,
-  messageHandler,
-  echoHandler,
   stopHandler,
   tickHandler,
 ];
 
-const handlers: Handler[] = [
-  eventsHandler,
-  optOutHandler,
-  acceptHandler,
-  declineHandler,
-  fallbackHandler,
-];
+const handlers: Handler[] = [fallbackHandler];
 
 const activeHandlers: Handler[] = [];
 
@@ -246,6 +176,34 @@ const registerHandlers = async (config: Config) => {
     activeHandlers.push(handler);
   }
 };
+
+slack.action('optIn', async ({ ack, body }) => {
+  await ack();
+  const userId = body.user.id;
+  await planningService.optOut(userId);
+  await slackService.sendOptedOut(userId);
+});
+
+slack.action('optOut', async ({ ack, body }) => {
+  await ack();
+  const userId = body.user.id;
+  await planningService.optIn(userId);
+  await slackService.sendOptedIn(userId);
+});
+
+slack.action('acceptInvite', async ({ ack, body }) => {
+  await ack();
+  const userId = body.user.id;
+  const event = await eventService.acceptInvitation(userId);
+  await slackService.sendAcceptResult(event, userId);
+});
+
+slack.action('declineInvite', async ({ ack, body }) => {
+  await ack();
+  const userId = body.user.id;
+  const event = await eventService.declineInvitation(userId);
+  await slackService.sendDeclineResult(event, userId);
+});
 
 slack.message(async ({ message, say }) => {
   if (message.channel_type !== 'im') return;

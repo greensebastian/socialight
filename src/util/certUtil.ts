@@ -12,9 +12,9 @@ const getCertInfo = () => {
 
   return privateKey && privateKey.length && certificate && certificate.length
     ? {
-        privateKey,
-        certificate,
-      }
+      privateKey,
+      certificate,
+    }
     : undefined;
 };
 
