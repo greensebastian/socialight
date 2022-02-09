@@ -3,8 +3,8 @@ import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse'
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
 import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
-import { getAnnouncementBlock } from 'src/util/blocks';
 import { Event } from '@models/event';
+import { getAnnouncementBlock } from '../util/blocks';
 
 class SlackRepository {
   private cachedUsers = new Map<string, User>();
