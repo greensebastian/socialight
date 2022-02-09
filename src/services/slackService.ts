@@ -20,12 +20,12 @@ class SlackService {
 
   async sendInvite(invite: Invite, channelId: string, date: Date) {
     const { blocks, text } = getInvitationBlock(channelId, date);
-    await this.slackRepository.sendEphemeralBlocks(invite.userId, channelId, blocks, text);
+    await this.slackRepository.sendEphemeralBlocks(channelId, invite.userId, blocks, text);
   }
 
   async sendReminder(invite: Invite, channelId: string, date: Date) {
     const { blocks, text } = getReminderBlock(channelId, date);
-    await this.slackRepository.sendEphemeralBlocks(invite.userId, channelId, blocks, text);
+    await this.slackRepository.sendEphemeralBlocks(channelId, invite.userId, blocks, text);
   }
 
   async sendAnnouncement(event: Event) {
