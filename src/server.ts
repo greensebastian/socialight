@@ -188,7 +188,7 @@ slack.action('optIn', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   await planningService.optIn(userId);
   const { blocks } = getOptedInBlock();
-  respond({ blocks, replace_original: true });
+  respond({ blocks, replace_original: true, as_user: true });
 });
 
 slack.action('optOut', async ({ ack, body, respond }) => {
@@ -196,7 +196,7 @@ slack.action('optOut', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   await planningService.optOut(userId);
   const { blocks } = getOptedOutBlock();
-  respond({ blocks, replace_original: true });
+  respond({ blocks, replace_original: true, as_user: true });
 });
 
 slack.action('acceptInvite', async ({ ack, body, respond }) => {
@@ -204,7 +204,7 @@ slack.action('acceptInvite', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   const event = await eventService.acceptInvitation(userId);
   const { blocks } = getAcceptResponseBlock(event!.channelId, event!.time);
-  respond({ blocks, replace_original: true });
+  respond({ blocks, replace_original: true, as_user: true });
 });
 
 slack.action('declineInvite', async ({ ack, body, respond }) => {
@@ -212,7 +212,7 @@ slack.action('declineInvite', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   const event = await eventService.declineInvitation(userId);
   const { blocks } = getDeclineResponseBlock(event!.channelId, event!.time);
-  respond({ blocks, replace_original: true });
+  respond({ blocks, replace_original: true, as_user: true });
 });
 
 slack.message(async ({ message, say }) => {
