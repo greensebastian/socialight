@@ -3,6 +3,8 @@ import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse'
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
 import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
+import { getAnnouncementBlock } from 'src/util/blocks';
+import { Event } from '@models/event';
 
 class SlackRepository {
   private cachedUsers = new Map<string, User>();
@@ -182,11 +184,17 @@ class SlackRepository {
     });
   }
 
-  async sendAnnouncement(markdown: string) {
+  async sendAnnouncement(event: Event) {
     const channel = (await this.getChannels()).announcementsChannel;
+    const userIds = event.invites.map((invite) => invite.userId);
+
+    // TODO: Randomize reservation / expense user and
+    // store them in event in eventService / planningService
+    const { blocks, text } = getAnnouncementBlock(userIds, userIds[0], userIds[1], event.time);
     await this.slack.client.chat.postMessage({
       channel: channel!.id!,
-      text: markdown,
+      blocks,
+      text,
     });
   }
 }
