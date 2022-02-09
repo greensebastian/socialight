@@ -17,6 +17,8 @@ const getUsersMd = (userIds: string[]): string => {
 };
 const getDateMd = (date: Date) => `*${dateFormat(date)}*`;
 
+const getInvitationText = (channelId: string, date: Date) =>
+  `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)}`;
 export const getInvitationBlock = (channelId: string, date: Date) => ({
   blocks: [
     {
@@ -24,9 +26,7 @@ export const getInvitationBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(
-            date,
-          )}`,
+          text: getInvitationText(channelId, date),
         },
       ],
     } as SectionBlock,
@@ -37,7 +37,7 @@ export const getInvitationBlock = (channelId: string, date: Date) => ({
         {
           type: 'button',
           style: 'primary',
-          action_id: 'accept',
+          action_id: 'acceptInvite',
           text: {
             type: 'plain_text',
             text: 'Accept',
@@ -45,7 +45,7 @@ export const getInvitationBlock = (channelId: string, date: Date) => ({
         },
         {
           type: 'button',
-          action_id: 'decline',
+          action_id: 'declineInvite',
           text: {
             type: 'plain_text',
             text: 'Decline',
@@ -54,8 +54,13 @@ export const getInvitationBlock = (channelId: string, date: Date) => ({
       ],
     } as ActionsBlock,
   ],
+  text: getInvitationText(channelId, date),
 });
 
+const getReminderText = (channelId: string, date: Date) =>
+  `Reminder: You haven't responded to the invite to have pizza with ${getChannelMd(
+    channelId,
+  )} on ${getDateMd(date)}`;
 export const getReminderBlock = (channelId: string, date: Date) => ({
   blocks: [
     {
@@ -63,9 +68,7 @@ export const getReminderBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `Reminder: You haven't responded to the invite to have pizza with ${getChannelMd(
-            channelId,
-          )} on ${getDateMd(date)}`,
+          text: getReminderText(channelId, date),
         },
       ],
     } as SectionBlock,
@@ -93,6 +96,7 @@ export const getReminderBlock = (channelId: string, date: Date) => ({
       ],
     } as ActionsBlock,
   ],
+  text: getReminderText(channelId, date),
 });
 
 export const getAnnouncementBlock = (
@@ -118,8 +122,13 @@ export const getAnnouncementBlock = (
       ],
     } as SectionBlock,
   ],
+  text: `You're having pizza on ${getDateMd(date)}!`,
 });
 
+const getAcceptResponseText = (channelId: string, date: Date) =>
+  `You've *accepted* the invite for pizza with ${getChannelMd(channelId)} on ${getDateMd(
+    date,
+  )}. Have fun!`;
 export const getAcceptResponseBlock = (channelId: string, date: Date) => ({
   blocks: [
     {
@@ -127,15 +136,18 @@ export const getAcceptResponseBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `You've *accepted* the invite for pizza with ${getChannelMd(
-            channelId,
-          )} on ${getDateMd(date)}. Have fun!`,
+          text: getAcceptResponseText(channelId, date),
         },
       ],
     } as SectionBlock,
   ],
+  text: getAcceptResponseText(channelId, date),
 });
 
+const getDeclineResponseText = (channelId: string, date: Date) =>
+  `You've *declined* the invite for pizza with ${getChannelMd(channelId)} on ${getDateMd(
+    date,
+  )}. Hope to see some other time!`;
 export const getDeclineResponseBlock = (channelId: string, date: Date) => ({
   blocks: [
     {
@@ -150,8 +162,13 @@ export const getDeclineResponseBlock = (channelId: string, date: Date) => ({
       ],
     } as SectionBlock,
   ],
+  text: getDeclineResponseText(channelId, date),
 });
 
+const getEventCancelledText = (channelId: string, date: Date) =>
+  `The event planned for ${getChannelMd(channelId)} on ${getDateMd(
+    date,
+  )} was cancelled due to not enough people accepting the invite. :cry:`;
 export const getEventCancelledBlock = (channelId: string, date: Date) => ({
   blocks: [
     {
@@ -159,15 +176,16 @@ export const getEventCancelledBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `The event planned for ${getChannelMd(channelId)} on ${getDateMd(
-            date,
-          )} was cancelled due to not enough people accepting the invite. :cry:`,
+          text: getEventCancelledText(channelId, date),
         },
       ],
     } as SectionBlock,
   ],
+  text: getEventCancelledText(channelId, date),
 });
 
+const optedOutText =
+  "Got it! You won't receive any more invites. You can always opt-in by typing /socialight";
 export const getOptedOutBlock = () => ({
   blocks: [
     {
@@ -175,13 +193,16 @@ export const getOptedOutBlock = () => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: "Got it! You won't receive any more invites. You can always opt-in by typing /socialight",
+          text: optedOutText,
         },
       ],
     } as SectionBlock,
   ],
+  text: optedOutText,
 });
 
+const optedInText =
+  'Welcome back! You will now receive invites again. You can always opt-out by typing /socialight';
 export const getOptedInBlock = () => ({
   blocks: [
     {
@@ -189,11 +210,12 @@ export const getOptedInBlock = () => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: 'Welcome back! You will now receive invites again. You can always opt-out by typing /socialight',
+          text: optedInText,
         },
       ],
     } as SectionBlock,
   ],
+  text: optedInText,
 });
 
 export const getInfoBlock = (optedOut: boolean) => ({
@@ -242,8 +264,11 @@ export const getInfoBlock = (optedOut: boolean) => ({
       ],
     } as ActionsBlock,
   ],
+  text: '',
 });
 
+const acceptErrorResponseText =
+  'Something went wrong while trying to accept an event :exploding_head:';
 export const getAcceptErrorResponseBlock = () => ({
   blocks: [
     {
@@ -251,13 +276,16 @@ export const getAcceptErrorResponseBlock = () => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: 'Something went wrong while trying to accept an event :exploding_head:',
+          text: acceptErrorResponseText,
         },
       ],
     } as SectionBlock,
   ],
+  text: acceptErrorResponseText,
 });
 
+const declineErrorResponseText =
+  'Something went wrong while trying to decline an event :exploding_head:';
 export const getDeclineErrorResponseBlock = () => ({
   blocks: [
     {
@@ -265,9 +293,10 @@ export const getDeclineErrorResponseBlock = () => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: 'Something went wrong while trying to decline an event :exploding_head:',
+          text: declineErrorResponseText,
         },
       ],
     } as SectionBlock,
   ],
+  text: declineErrorResponseText,
 });

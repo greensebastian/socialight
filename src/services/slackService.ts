@@ -19,20 +19,20 @@ class SlackService {
   constructor(private slackRepository: SlackRepository) {}
 
   async sendInvite(invite: Invite, channelId: string, date: Date) {
-    const { blocks } = getInvitationBlock(channelId, date);
-    await this.slackRepository.sendEphemeralBlocks(invite.userId, channelId, blocks);
+    const { blocks, text } = getInvitationBlock(channelId, date);
+    await this.slackRepository.sendEphemeralBlocks(invite.userId, channelId, blocks, text);
   }
 
   async sendReminder(invite: Invite, channelId: string, date: Date) {
-    const { blocks } = getReminderBlock(channelId, date);
-    await this.slackRepository.sendEphemeralBlocks(invite.userId, channelId, blocks);
+    const { blocks, text } = getReminderBlock(channelId, date);
+    await this.slackRepository.sendEphemeralBlocks(invite.userId, channelId, blocks, text);
   }
 
   async sendAnnouncement(event: Event) {
     const users = await this.slackRepository.getUsersDetails(event.accepted);
     const userIds = users.map((user) => user.id!);
-    const { blocks } = getAnnouncementBlock(userIds, userIds[0], userIds[1], event.time);
-    await this.slackRepository.sendBlocks(event.channelId, blocks);
+    const { blocks, text } = getAnnouncementBlock(userIds, userIds[0], userIds[1], event.time);
+    await this.slackRepository.sendBlocks(event.channelId, blocks, text);
   }
 
   private async announcementChannelId() {
@@ -51,37 +51,37 @@ class SlackService {
 
   async sendAcceptResult(event: Event | undefined, userId: string) {
     if (event == null) {
-      const { blocks } = getAcceptErrorResponseBlock();
-      await this.slackRepository.sendBlocksToUser(userId, blocks);
+      const { blocks, text } = getAcceptErrorResponseBlock();
+      await this.slackRepository.sendBlocksToUser(userId, blocks, text);
       return;
     }
-    const { blocks } = getAcceptResponseBlock(event.channelId, event.time);
-    await this.slackRepository.sendEphemeralBlocks(event.channelId, userId, blocks);
+    const { blocks, text } = getAcceptResponseBlock(event.channelId, event.time);
+    await this.slackRepository.sendEphemeralBlocks(event.channelId, userId, blocks, text);
   }
 
   async sendDeclineResult(event: Event | undefined, userId: string) {
     if (event == null) {
-      const { blocks } = getDeclineErrorResponseBlock();
-      await this.slackRepository.sendBlocksToUser(userId, blocks);
+      const { blocks, text } = getDeclineErrorResponseBlock();
+      await this.slackRepository.sendBlocksToUser(userId, blocks, text);
       return;
     }
-    const { blocks } = getDeclineResponseBlock(event.channelId, event.time);
-    await this.slackRepository.sendEphemeralBlocks(event.channelId, userId, blocks);
+    const { blocks, text } = getDeclineResponseBlock(event.channelId, event.time);
+    await this.slackRepository.sendEphemeralBlocks(event.channelId, userId, blocks, text);
   }
 
   async sendFailedEventNotification(event: Event) {
-    const { blocks } = getEventCancelledBlock(event.channelId, event.time);
-    await this.slackRepository.sendBlocks(event.channelId, blocks);
+    const { blocks, text } = getEventCancelledBlock(event.channelId, event.time);
+    await this.slackRepository.sendBlocks(event.channelId, blocks, text);
   }
 
   async sendOptedOut(userId: string) {
-    const { blocks } = getOptedOutBlock();
-    await this.slackRepository.sendBlocksToUser(userId, blocks);
+    const { blocks, text } = getOptedOutBlock();
+    await this.slackRepository.sendBlocksToUser(userId, blocks, text);
   }
 
   async sendOptedIn(userId: string) {
-    const { blocks } = getOptedInBlock();
-    await this.slackRepository.sendBlocksToUser(userId, blocks);
+    const { blocks, text } = getOptedInBlock();
+    await this.slackRepository.sendBlocksToUser(userId, blocks, text);
   }
 }
 

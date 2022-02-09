@@ -143,9 +143,9 @@ class SlackRepository {
     await this.sendMarkdown(conversation.channel!.id!, markdown);
   }
 
-  async sendBlocksToUser(userId: string, blocks: KnownBlock[]) {
+  async sendBlocksToUser(userId: string, blocks: KnownBlock[], text: string) {
     const conversation = await this.openUserConversation(userId);
-    await this.sendBlocks(conversation.channel!.id!, blocks);
+    await this.sendBlocks(conversation.channel!.id!, blocks, text);
   }
 
   private async sendMarkdown(channelId: string, markdown: string) {
@@ -165,18 +165,20 @@ class SlackRepository {
     });
   }
 
-  async sendBlocks(channelId: string, blocks: KnownBlock[]) {
+  async sendBlocks(channelId: string, blocks: KnownBlock[], text: string) {
     await this.slack.client.chat.postMessage({
       channel: channelId,
       blocks,
+      text,
     });
   }
 
-  async sendEphemeralBlocks(channelId: string, userId: string, blocks: KnownBlock[]) {
+  async sendEphemeralBlocks(channelId: string, userId: string, blocks: KnownBlock[], text: string) {
     await this.slack.client.chat.postEphemeral({
       channel: channelId,
       user: userId,
       blocks,
+      text,
     });
   }
 
