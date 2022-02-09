@@ -40,7 +40,7 @@ const dateService = new DateService();
 
 const randomService = new RandomService();
 
-const eventService = new EventService(stateRepository, dateService);
+const eventService = new EventService(stateRepository, dateService, randomService);
 
 const planningService = new PlanningService(
   stateRepository,

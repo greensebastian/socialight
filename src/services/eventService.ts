@@ -2,9 +2,14 @@ import { Event, Invite } from '@models/event';
 import DateService from '@services/dateService';
 import { Guid } from 'guid-typescript';
 import { IStateRepository } from 'src/core/interface';
+import RandomService from './randomService';
 
 class EventService {
-  constructor(private stateRepository: IStateRepository, private dateService: DateService) {}
+  constructor(
+    private stateRepository: IStateRepository,
+    private dateService: DateService,
+    private randomService: RandomService,
+  ) {}
 
   /**
    * Find all created events
@@ -124,6 +129,19 @@ class EventService {
 
   async inviteToEvent(event: Event, userIds: string[]) {
     event.invites.concat(await EventService.createInvites(userIds));
+    await this.updateEvent(event);
+  }
+
+  async finalizeEvent(event: Event) {
+    event.announced = true;
+    if (event.accepted.length === 1) {
+      event.reservationUser = event.accepted[0];
+      event.expenseUser = event.accepted[0];
+    } else {
+      event.reservationUser = this.randomService.shuffleArray(event.accepted)[0];
+      const remainingAccepted = [event.reservationUser, ...event.accepted];
+      event.expenseUser = this.randomService.shuffleArray(remainingAccepted)[0];
+    }
     await this.updateEvent(event);
   }
 
