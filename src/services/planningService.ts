@@ -131,9 +131,7 @@ class PlanningService {
     const toInvite = new Set<string>();
     for (const userId of availableToAdd) {
       const userDetails = await this.slackRepository.getUserDetails(userId);
-      console.log('Investigating user: ', userDetails);
       if (!userDetails.is_app_user && !userDetails.is_bot && !toInvite.has(userId)) {
-        console.log('Adding user to invite: ', userId);
         toInvite.add(userId);
         if (toInvite.size >= maxParticipants) break;
       }
