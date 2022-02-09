@@ -132,7 +132,7 @@ class EventService {
     await this.updateEvent(event);
   }
 
-  async finalizeEvent(event: Event) {
+  async finalizeAndUpdateEvent(event: Event) {
     event.announced = true;
     if (event.accepted.length === 1) {
       event.reservationUser = event.accepted[0];
