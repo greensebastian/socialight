@@ -1,11 +1,7 @@
 import { Event, Invite } from '@models/event';
 import SlackRepository from '@repositories/slackRepository';
 import {
-  getAcceptErrorResponseBlock,
-  getAcceptResponseBlock,
   getAnnouncementBlock,
-  getDeclineErrorResponseBlock,
-  getDeclineResponseBlock,
   getEventCancelledBlock,
   getInvitationBlock,
   getOptedInBlock,
@@ -47,26 +43,6 @@ class SlackService {
 
   private async ensureInvitedToChannel(userIds: string[]) {
     await this.slackRepository.inviteToChannel(userIds, await this.announcementChannelId());
-  }
-
-  async sendAcceptResult(event: Event | undefined, userId: string) {
-    if (event == null) {
-      const { blocks, text } = getAcceptErrorResponseBlock();
-      await this.slackRepository.sendBlocksToUser(userId, blocks, text);
-      return;
-    }
-    const { blocks, text } = getAcceptResponseBlock(event.channelId, event.time);
-    await this.slackRepository.sendEphemeralBlocks(event.channelId, userId, blocks, text);
-  }
-
-  async sendDeclineResult(event: Event | undefined, userId: string) {
-    if (event == null) {
-      const { blocks, text } = getDeclineErrorResponseBlock();
-      await this.slackRepository.sendBlocksToUser(userId, blocks, text);
-      return;
-    }
-    const { blocks, text } = getDeclineResponseBlock(event.channelId, event.time);
-    await this.slackRepository.sendEphemeralBlocks(event.channelId, userId, blocks, text);
   }
 
   async sendFailedEventNotification(event: Event) {

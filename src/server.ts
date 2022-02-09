@@ -11,6 +11,12 @@ import DateService from './services/dateService';
 import PlanningService from './services/planningService';
 import RandomService from './services/randomService';
 import setupSecureCtx from './util/certUtil';
+import {
+  getAcceptResponseBlock,
+  getDeclineResponseBlock,
+  getOptedInBlock,
+  getOptedOutBlock,
+} from './util/blocks';
 
 const env = process.env.NODE_ENV || 'development';
 const envPath = env === 'production' ? '.env' : '.env.development';
@@ -177,32 +183,36 @@ const registerHandlers = async (config: Config) => {
   }
 };
 
-slack.action('optIn', async ({ ack, body }) => {
-  await ack();
-  const userId = body.user.id;
-  await planningService.optOut(userId);
-  await slackService.sendOptedOut(userId);
-});
-
-slack.action('optOut', async ({ ack, body }) => {
+slack.action('optIn', async ({ ack, body, respond }) => {
   await ack();
   const userId = body.user.id;
   await planningService.optIn(userId);
-  await slackService.sendOptedIn(userId);
+  const { blocks } = getOptedInBlock();
+  respond({ blocks, replace_original: true });
 });
 
-slack.action('acceptInvite', async ({ ack, body }) => {
+slack.action('optOut', async ({ ack, body, respond }) => {
+  await ack();
+  const userId = body.user.id;
+  await planningService.optOut(userId);
+  const { blocks } = getOptedOutBlock();
+  respond({ blocks, replace_original: true });
+});
+
+slack.action('acceptInvite', async ({ ack, body, respond }) => {
   await ack();
   const userId = body.user.id;
   const event = await eventService.acceptInvitation(userId);
-  await slackService.sendAcceptResult(event, userId);
+  const { blocks } = getAcceptResponseBlock(event!.channelId, event!.time);
+  respond({ blocks, replace_original: true });
 });
 
-slack.action('declineInvite', async ({ ack, body }) => {
+slack.action('declineInvite', async ({ ack, body, respond }) => {
   await ack();
   const userId = body.user.id;
   const event = await eventService.declineInvitation(userId);
-  await slackService.sendDeclineResult(event, userId);
+  const { blocks } = getDeclineResponseBlock(event!.channelId, event!.time);
+  respond({ blocks, replace_original: true });
 });
 
 slack.message(async ({ message, say }) => {
