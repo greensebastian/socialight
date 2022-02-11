@@ -6,12 +6,21 @@ import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
 import { Event } from '@models/event';
 import { getAnnouncementBlock } from '../util/blocks';
 
+export type AuthorInfo = {
+  username: string;
+  icon_emoji: string;
+};
+
 class SlackRepository {
   private cachedUsers = new Map<string, User>();
 
   private cachedChannels = new Map<string, Channel>();
 
-  constructor(private configProvider: ConfigRepository, private slack: App) {}
+  constructor(
+    private configProvider: ConfigRepository,
+    private slack: App,
+    private botAuthorInfo: AuthorInfo,
+  ) {}
 
   async getChannels() {
     const config = await this.configProvider.getConfig();
@@ -137,6 +146,8 @@ class SlackRepository {
     await this.slack.client.chat.postMessage({
       channel: conversation.channel!.id!,
       text,
+      as_user: true,
+      ...this.botAuthorInfo,
     });
   }
 
@@ -164,6 +175,8 @@ class SlackRepository {
       channel: channelId,
       blocks,
       text: markdown,
+      as_user: true,
+      ...this.botAuthorInfo,
     });
   }
 
@@ -172,6 +185,8 @@ class SlackRepository {
       channel: channelId,
       blocks,
       text,
+      as_user: true,
+      ...this.botAuthorInfo,
     });
   }
 
@@ -181,6 +196,8 @@ class SlackRepository {
       user: userId,
       blocks,
       text,
+      as_user: true,
+      ...this.botAuthorInfo,
     });
   }
 
@@ -195,6 +212,8 @@ class SlackRepository {
       channel: channel!.id!,
       blocks,
       text,
+      as_user: true,
+      ...this.botAuthorInfo,
     });
   }
 }

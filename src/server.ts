@@ -23,6 +23,11 @@ const envPath = env === 'production' ? '.env' : '.env.development';
 
 configDotenv({ path: envPath });
 
+const botAuthorInfo = {
+  username: 'SociaLight',
+  icon_emoji: ':pizza:',
+};
+
 const slack = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -32,7 +37,7 @@ const slack = new App({
 
 const configRepository = new ConfigRepository();
 
-const slackRepository = new SlackRepository(configRepository, slack);
+const slackRepository = new SlackRepository(configRepository, slack, botAuthorInfo);
 
 const stateRepository = new FileRepository();
 
@@ -188,7 +193,12 @@ slack.action('optIn', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   await planningService.optIn(userId);
   const { blocks } = getOptedInBlock();
-  respond({ blocks, replace_original: true, as_user: true });
+  respond({
+    blocks,
+    replace_original: true,
+    as_user: true,
+    ...botAuthorInfo,
+  });
 });
 
 slack.action('optOut', async ({ ack, body, respond }) => {
@@ -196,7 +206,12 @@ slack.action('optOut', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   await planningService.optOut(userId);
   const { blocks } = getOptedOutBlock();
-  respond({ blocks, replace_original: true, as_user: true });
+  respond({
+    blocks,
+    replace_original: true,
+    as_user: true,
+    ...botAuthorInfo,
+  });
 });
 
 slack.action('acceptInvite', async ({ ack, body, respond }) => {
@@ -204,7 +219,12 @@ slack.action('acceptInvite', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   const event = await eventService.acceptInvitation(userId);
   const { blocks } = getAcceptResponseBlock(event!.channelId, event!.time);
-  respond({ blocks, replace_original: true, as_user: true });
+  respond({
+    blocks,
+    replace_original: true,
+    as_user: true,
+    ...botAuthorInfo,
+  });
 });
 
 slack.action('declineInvite', async ({ ack, body, respond }) => {
@@ -212,7 +232,12 @@ slack.action('declineInvite', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   const event = await eventService.declineInvitation(userId);
   const { blocks } = getDeclineResponseBlock(event!.channelId, event!.time);
-  respond({ blocks, replace_original: true, as_user: true });
+  respond({
+    blocks,
+    replace_original: true,
+    as_user: true,
+    ...botAuthorInfo,
+  });
 });
 
 slack.message(async ({ message, say }) => {

@@ -112,12 +112,9 @@ export const getAnnouncementBlock = (
         {
           type: 'mrkdwn',
           text: `On ${getDateMd(date)}, ${getUsersMd(userIds)} will get together for pizza.
-          
-          ${getUserMd(reservationUser)} will make the reservation for the group.
-          
-          ${getUserMd(expenseUser)} will expense the pizza afterwards.
-
-          The rest will show up and have a good time.`,
+${getUserMd(reservationUser)} will make the reservation for the group.
+${getUserMd(expenseUser)} will expense the pizza afterwards.
+The rest will show up and have a good time.`,
         },
       ],
     } as SectionBlock,
