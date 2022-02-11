@@ -143,6 +143,7 @@ class EventService {
       event.expenseUser = this.randomService.shuffleArray(remainingAccepted)[0];
     }
     await this.updateEvent(event);
+    return event;
   }
 
   private static async createInvites(users: string[]): Promise<Invite[]> {

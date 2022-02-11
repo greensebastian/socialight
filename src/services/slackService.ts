@@ -27,7 +27,13 @@ class SlackService {
   async sendAnnouncement(event: Event) {
     const users = await this.slackRepository.getUsersDetails(event.accepted);
     const userIds = users.map((user) => user.id!);
-    const { blocks, text } = getAnnouncementBlock(userIds, userIds[0], userIds[1], event.time);
+    const { blocks, text } = getAnnouncementBlock(
+      userIds,
+      event.reservationUser!,
+      event.expenseUser!,
+      event.time,
+    );
+
     await this.slackRepository.sendBlocks(event.channelId, blocks, text);
   }
 

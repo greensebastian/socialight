@@ -3,8 +3,6 @@ import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse'
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
 import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
-import { Event } from '@models/event';
-import { getAnnouncementBlock } from '../util/blocks';
 
 export type AuthorInfo = {
   username: string;
@@ -191,26 +189,6 @@ class SlackRepository {
     await this.slack.client.chat.postEphemeral({
       channel: channelId,
       user: userId,
-      blocks,
-      text,
-      ...this.botAuthorInfo,
-    });
-  }
-
-  async sendAnnouncement(event: Event) {
-    const channel = (await this.getChannels()).announcementsChannel;
-    const userIds = event.invites.map((invite) => invite.userId);
-
-    // TODO: Randomize reservation / expense user and
-    // store them in event in eventService / planningService
-    const { blocks, text } = getAnnouncementBlock(
-      userIds,
-      event.reservationUser!,
-      event.expenseUser!,
-      event.time,
-    );
-    await this.slack.client.chat.postMessage({
-      channel: channel!.id!,
       blocks,
       text,
       ...this.botAuthorInfo,

@@ -63,8 +63,8 @@ class SchedulingService {
     const events = await this.eventService.getAllEvents();
     for (const event of events) {
       if (event.accepted.length === config.participants && !event.announced) {
-        await this.eventService.finalizeAndUpdateEvent(event);
-        await this.slackService.sendAnnouncement(event);
+        const finalizedEvent = await this.eventService.finalizeAndUpdateEvent(event);
+        await this.slackService.sendAnnouncement(finalizedEvent);
       }
     }
   }
