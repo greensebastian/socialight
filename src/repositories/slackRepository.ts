@@ -203,7 +203,12 @@ class SlackRepository {
 
     // TODO: Randomize reservation / expense user and
     // store them in event in eventService / planningService
-    const { blocks, text } = getAnnouncementBlock(userIds, userIds[0], userIds[1], event.time);
+    const { blocks, text } = getAnnouncementBlock(
+      userIds,
+      event.reservationUser!,
+      event.expenseUser!,
+      event.time,
+    );
     await this.slack.client.chat.postMessage({
       channel: channel!.id!,
       blocks,
