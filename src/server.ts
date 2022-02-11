@@ -196,7 +196,6 @@ slack.action('optIn', async ({ ack, body, respond }) => {
   respond({
     blocks,
     replace_original: true,
-    as_user: true,
     ...botAuthorInfo,
   });
 });
@@ -209,7 +208,6 @@ slack.action('optOut', async ({ ack, body, respond }) => {
   respond({
     blocks,
     replace_original: true,
-    as_user: true,
     ...botAuthorInfo,
   });
 });
@@ -222,7 +220,6 @@ slack.action('acceptInvite', async ({ ack, body, respond }) => {
   respond({
     blocks,
     replace_original: true,
-    as_user: true,
     ...botAuthorInfo,
   });
 });
@@ -235,7 +232,6 @@ slack.action('declineInvite', async ({ ack, body, respond }) => {
   respond({
     blocks,
     replace_original: true,
-    as_user: true,
     ...botAuthorInfo,
   });
 });
