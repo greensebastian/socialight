@@ -133,16 +133,29 @@ class EventService {
   }
 
   async finalizeAndUpdateEvent(event: Event) {
-    event.announced = true;
+    // eslint-disable-next-line no-param-reassign
+    let updatedEvent = {
+      ...event,
+      announced: true,
+    };
+
     if (event.accepted.length === 1) {
-      event.reservationUser = event.accepted[0];
-      event.expenseUser = event.accepted[0];
+      updatedEvent = {
+        ...updatedEvent,
+        reservationUser: event.accepted[0],
+        expenseUser: event.accepted[0],
+      };
     } else {
-      event.reservationUser = this.randomService.shuffleArray(event.accepted)[0];
-      const remainingAccepted = [event.reservationUser, ...event.accepted];
-      event.expenseUser = this.randomService.shuffleArray(remainingAccepted)[0];
+      const reservationUser = this.randomService.shuffleArray(event.accepted)[0];
+      const remainingAcceptedUsers = event.accepted.filter((user) => user !== reservationUser);
+      const expenseUser = this.randomService.shuffleArray(remainingAcceptedUsers)[0];
+      updatedEvent = {
+        ...updatedEvent,
+        reservationUser,
+        expenseUser,
+      };
     }
-    await this.updateEvent(event);
+    await this.updateEvent(updatedEvent);
     return event;
   }
 

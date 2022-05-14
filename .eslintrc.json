@@ -1,7 +1,8 @@
 {
     "env": {
         "browser": false,
-        "es2021": true
+        "es2021": true,
+        "jest": true
     },
     "extends": [
         "airbnb-base"
@@ -34,7 +35,8 @@
         "no-useless-constructor": "off",
         "no-empty-function": "off",
         "no-await-in-loop": "off",
-        "operator-linebreak": "off"
+        "operator-linebreak": "off",
+        "import/no-extraneous-dependencies": ["error", {"devDependencies": ["**/*.test.ts", "**/*.spec.ts"]}]
     },
     "settings": {
         "import/resolver": {
