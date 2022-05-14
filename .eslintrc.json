@@ -18,15 +18,23 @@
         "import"
     ],
     "rules": {
+        "implicit-arrow-linebreak": "off",
         "import/extensions": "off",
         "import/no-unresolved": "off",
         "no-debugger": "warn",
-        "no-restricted-syntax": ["error", "WithStatement", "BinaryExpression[operator='in']"],
+        "no-restricted-syntax": [
+            "error",
+            "WithStatement",
+            "BinaryExpression[operator='in']"
+        ],
         "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": ["error"],
+        "@typescript-eslint/no-unused-vars": [
+            "error"
+        ],
         "no-useless-constructor": "off",
         "no-empty-function": "off",
-        "no-await-in-loop": "off"
+        "no-await-in-loop": "off",
+        "operator-linebreak": "off"
     },
     "settings": {
         "import/resolver": {

@@ -2,11 +2,13 @@ import { Event, Invite } from '@models/event';
 import DateService from '@services/dateService';
 import { Guid } from 'guid-typescript';
 import { IStateRepository } from 'src/core/interface';
+import RandomService from './randomService';
 
 class EventService {
   constructor(
     private stateRepository: IStateRepository,
     private dateService: DateService,
+    private randomService: RandomService,
   ) {}
 
   /**
@@ -28,9 +30,12 @@ class EventService {
    */
   async getUserEvents(userId: string, expired: boolean = false): Promise<Event[]> {
     const events = await this.getAllEvents(expired);
-    const userEvents = events.filter((event) => event.invites.some((inv) => inv.userId === userId)
-      || event.accepted.includes(userId)
-      || event.declined.includes(userId));
+    const userEvents = events.filter(
+      (event) =>
+        event.invites.some((inv) => inv.userId === userId) ||
+        event.accepted.includes(userId) ||
+        event.declined.includes(userId),
+    );
     return userEvents;
   }
 
@@ -63,7 +68,8 @@ class EventService {
    * @returns true if an invitation was successfully accepted
    */
   async acceptInvitation(
-    userId: string, channelId: string | undefined = undefined,
+    userId: string,
+    channelId: string | undefined = undefined,
   ): Promise<Event | undefined> {
     const events = await this.getAllEvents();
     const event = await this.findEventToRespondTo(events, userId, channelId);
@@ -82,7 +88,8 @@ class EventService {
    * @returns true if an invitation was successfully declined
    */
   async declineInvitation(
-    userId: string, channelId: string | undefined = undefined,
+    userId: string,
+    channelId: string | undefined = undefined,
   ): Promise<Event | undefined> {
     const events = await this.getAllEvents();
     const event = await this.findEventToRespondTo(events, userId, channelId);
@@ -111,20 +118,6 @@ class EventService {
     return newEvent;
   }
 
-  async declineAllInvitations(userId: string): Promise<Event[]> {
-    const events = await this.getUserEvents(userId);
-    const pendingEvents = events.filter(
-      (event) => event.invites.map((invite) => invite.userId).includes(userId),
-    );
-
-    const updatedEvents: Event[] = [];
-    for (const event of pendingEvents) {
-      const updated = await this.declineEvent(event, userId);
-      updatedEvents.push(updated);
-    }
-    return updatedEvents;
-  }
-
   async updateEvent(newEvent: Event) {
     const events = await this.getAllEvents();
     if (!events.find((ev) => ev.id === newEvent.id)) return;
@@ -137,6 +130,20 @@ class EventService {
   async inviteToEvent(event: Event, userIds: string[]) {
     event.invites.concat(await EventService.createInvites(userIds));
     await this.updateEvent(event);
+  }
+
+  async finalizeAndUpdateEvent(event: Event) {
+    event.announced = true;
+    if (event.accepted.length === 1) {
+      event.reservationUser = event.accepted[0];
+      event.expenseUser = event.accepted[0];
+    } else {
+      event.reservationUser = this.randomService.shuffleArray(event.accepted)[0];
+      const remainingAccepted = [event.reservationUser, ...event.accepted];
+      event.expenseUser = this.randomService.shuffleArray(remainingAccepted)[0];
+    }
+    await this.updateEvent(event);
+    return event;
   }
 
   private static async createInvites(users: string[]): Promise<Invite[]> {
@@ -152,10 +159,11 @@ class EventService {
 
   // eslint-disable-next-line class-methods-use-this
   private async findEventToRespondTo(
-    events: Event[], userId: string, channelId: string | undefined,
+    events: Event[],
+    userId: string,
+    channelId: string | undefined,
   ): Promise<Event | undefined> {
     EventService.sortByDate(events);
-
     if (channelId) {
       return events.find((event) => event.channelId === channelId);
     }

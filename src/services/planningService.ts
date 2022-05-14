@@ -49,7 +49,6 @@ class PlanningService {
     const optedOut = await this.stateRepository.getOptedOut();
     if (!optedOut.includes(userId)) {
       await this.stateRepository.setOptedOut(optedOut.concat(userId));
-      return this.eventService.declineAllInvitations(userId);
     }
     return [];
   }
@@ -92,9 +91,10 @@ class PlanningService {
 
     for (const event of events) {
       const date = dayjs(event.time);
-      const failed = !event.announced
-        && event.accepted.length < config.participants
-        && now.isAfter(date.subtract(1, 'day'));
+      const failed =
+        !event.announced &&
+        event.accepted.length < config.participants &&
+        now.isAfter(date.subtract(1, 'day'));
 
       if (failed) failedEvents.push(event);
       else activeEvents.push(event);
@@ -111,7 +111,8 @@ class PlanningService {
   }
 
   private async getUserIdsToInvite(
-    channelId: string, event: Event | undefined = undefined,
+    channelId: string,
+    event: Event | undefined = undefined,
   ): Promise<string[]> {
     const optedOut = await this.stateRepository.getOptedOut();
 

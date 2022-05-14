@@ -9,6 +9,8 @@ export interface Event {
   declined: string[];
   accepted: string[];
   invites: Invite[];
+  reservationUser?: string;
+  expenseUser?: string;
 
   announced: boolean;
   time: Date;
