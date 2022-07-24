@@ -1,9 +1,11 @@
 import { Event, Invite } from '@models/event';
 import SlackRepository from '@repositories/slackRepository';
 import { SectionBlock } from '@slack/bolt';
+import { IStateRepository } from 'src/core/interface';
 import {
   getAnnouncementBlock,
   getEventCancelledBlock,
+  getHomeBlock,
   getInvitationBlock,
   getOptedInBlock,
   getOptedOutBlock,
@@ -13,7 +15,10 @@ import {
 class SlackService {
   private cachedAnnouncementChannelId: string | undefined = undefined;
 
-  constructor(private slackRepository: SlackRepository) {}
+  constructor(
+    private slackRepository: SlackRepository,
+    private stateRepository: IStateRepository,
+  ) {}
 
   async sendInvite(invite: Invite, channelId: string, date: Date) {
     const { blocks, text } = getInvitationBlock(channelId, date);
@@ -80,6 +85,12 @@ class SlackService {
   async sendOptedIn(userId: string) {
     const { blocks, text } = getOptedInBlock();
     await this.slackRepository.sendBlocksToUser(userId, blocks, text);
+  }
+
+  async refreshHomeScreen(userId: string) {
+    const userOptedOut = (await this.stateRepository.getOptedOut()).includes(userId);
+
+    await this.slackRepository.publishHomeView(userId, getHomeBlock(userOptedOut).blocks);
   }
 }
 

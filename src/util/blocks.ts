@@ -183,7 +183,7 @@ export const getEventCancelledBlock = (channelId: string, date: Date) => ({
 });
 
 const optedOutText =
-  "Got it! You won't receive any more invites. You can always opt-in by typing /socialight";
+  "Got it! You won't receive any more invites. You can always opt-in through the socialight app home page.";
 export const getOptedOutBlock = () => ({
   blocks: [
     {
@@ -200,7 +200,7 @@ export const getOptedOutBlock = () => ({
 });
 
 const optedInText =
-  'Welcome back! You will now receive invites again. You can always opt-out by typing /socialight';
+  'Welcome back! You will now receive invites again. You can always opt-out through the socialight app home page.';
 export const getOptedInBlock = () => ({
   blocks: [
     {
@@ -216,7 +216,7 @@ export const getOptedInBlock = () => ({
   text: optedInText,
 });
 
-export const getInfoBlock = (optedOut: boolean) => ({
+export const getHomeBlock = (optedOut: boolean) => ({
   blocks: [
     {
       type: 'section',
@@ -236,7 +236,7 @@ export const getInfoBlock = (optedOut: boolean) => ({
         type: 'mrkdwn',
         text: optedOut
           ? "You're currently opted out of future events. You can opt-in here."
-          : 'Too many invitations? You can opt-out of all future events. You can always opt-in again by typing */socialight.*',
+          : 'Too many invitations? You can opt-out of all future events. You can always opt-in through the socialight app home page.',
       },
     } as SectionBlock,
     {

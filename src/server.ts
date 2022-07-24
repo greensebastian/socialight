@@ -1,5 +1,6 @@
 import {
-  App, KnownEventFromType, RespondArguments, SayFn, SectionBlock } from '@slack/bolt';
+  App, KnownEventFromType, RespondArguments, SayFn, SectionBlock,
+} from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
 import Config from '@models/config';
 import { SecureContext } from 'tls';
@@ -16,8 +17,6 @@ import setupSecureCtx from './util/certUtil';
 import {
   getAcceptResponseBlock,
   getDeclineResponseBlock,
-  getOptedInBlock,
-  getOptedOutBlock,
 } from './util/blocks';
 
 // const env = process.env.NODE_ENV || 'development';
@@ -49,6 +48,8 @@ const randomService = new RandomService();
 
 const eventService = new EventService(stateRepository, dateService, randomService);
 
+const slackService = new SlackService(slackRepository, stateRepository);
+
 const planningService = new PlanningService(
   stateRepository,
   dateService,
@@ -56,9 +57,8 @@ const planningService = new PlanningService(
   slackRepository,
   configRepository,
   eventService,
+  slackService,
 );
-
-const slackService = new SlackService(slackRepository);
 
 const schedulingService = new SchedulingService(
   planningService,
@@ -198,20 +198,16 @@ const registerHandlers = async (config: Config) => {
   }
 };
 
-slack.action('optIn', async ({ ack, body, respond }) => {
+slack.action('optIn', async ({ ack, body }) => {
   await ack();
   const userId = body.user.id;
   await planningService.optIn(userId);
-  const { blocks } = getOptedInBlock();
-  await respond(createResponseMessage(blocks));
 });
 
-slack.action('optOut', async ({ ack, body, respond }) => {
+slack.action('optOut', async ({ ack, body }) => {
   await ack();
   const userId = body.user.id;
   await planningService.optOut(userId);
-  const { blocks } = getOptedOutBlock();
-  await respond(createResponseMessage(blocks));
 });
 
 slack.action('acceptInvite', async ({ ack, body, respond }) => {
@@ -241,6 +237,14 @@ slack.message(async ({ message, say }) => {
 
   for (const handler of activeHandlers) {
     if (await handler(text, say, message)) return;
+  }
+});
+
+slack.event('app_home_opened', async ({ event, logger }) => {
+  try {
+    await slackService.refreshHomeScreen(event.user);
+  } catch (error) {
+    logger.error(error);
   }
 });
 

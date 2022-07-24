@@ -6,6 +6,7 @@ import { IStateRepository } from 'src/core/interface';
 import SlackRepository from '../repositories/slackRepository';
 import ConfigRepository from '../repositories/configRepository';
 import EventService from './eventService';
+import SlackService from './slackService';
 
 class PlanningService {
   constructor(
@@ -15,6 +16,7 @@ class PlanningService {
     private slackRepository: SlackRepository,
     private configRepository: ConfigRepository,
     private eventService: EventService,
+    private slackService: SlackService,
   ) {}
 
   /**
@@ -49,6 +51,7 @@ class PlanningService {
     const optedOut = await this.stateRepository.getOptedOut();
     if (!optedOut.includes(userId)) {
       await this.stateRepository.setOptedOut(optedOut.concat(userId));
+      await this.slackService.refreshHomeScreen(userId);
     }
     return [];
   }
@@ -61,6 +64,7 @@ class PlanningService {
     const optedOut = await this.stateRepository.getOptedOut();
     if (optedOut.includes(userId)) {
       await this.stateRepository.setOptedOut(optedOut.filter((id) => id !== userId));
+      await this.slackService.refreshHomeScreen(userId);
     }
   }
 

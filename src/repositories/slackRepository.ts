@@ -1,4 +1,4 @@
-import { App } from '@slack/bolt';
+import { App, Block } from '@slack/bolt';
 import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse';
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
@@ -193,6 +193,19 @@ class SlackRepository {
       blocks,
       text,
       ...this.botAuthorInfo,
+    });
+  }
+
+  async publishHomeView(userId: string, blocks: Block[]) {
+    // Call views.publish with the built-in client
+    await this.slack.client.views.publish({
+      // Use the user ID associated with the event
+      user_id: userId,
+      view: {
+        // Home tabs must be enabled in your app configuration page under "App Home"
+        type: 'home',
+        blocks,
+      },
     });
   }
 }
