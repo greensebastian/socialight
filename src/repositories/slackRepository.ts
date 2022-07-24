@@ -6,6 +6,7 @@ import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
 
 export type AuthorInfo = {
   username: string;
+  // eslint-disable-next-line camelcase
   icon_emoji: string;
 };
 
@@ -93,7 +94,7 @@ class SlackRepository {
         cursor,
       });
 
-      usersResponse.members!.forEach((memberId) => memberIds.add(memberId));
+      usersResponse.members!.forEach((memberId: any) => memberIds.add(memberId));
       cursor = usersResponse.response_metadata!.next_cursor;
       moreToFetch = !!cursor;
     }
@@ -158,7 +159,7 @@ class SlackRepository {
     await this.sendBlocks(conversation.channel!.id!, blocks, text);
   }
 
-  private async sendMarkdown(channelId: string, markdown: string) {
+  public async sendMarkdown(channelId: string, markdown: string) {
     const blocks = [
       {
         type: 'section',

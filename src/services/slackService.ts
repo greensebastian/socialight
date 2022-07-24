@@ -1,5 +1,6 @@
 import { Event, Invite } from '@models/event';
 import SlackRepository from '@repositories/slackRepository';
+import { SectionBlock } from '@slack/bolt';
 import {
   getAnnouncementBlock,
   getEventCancelledBlock,
@@ -7,7 +8,7 @@ import {
   getOptedInBlock,
   getOptedOutBlock,
   getReminderBlock,
-} from 'src/util/blocks';
+} from '../util/blocks';
 
 class SlackService {
   private cachedAnnouncementChannelId: string | undefined = undefined;
@@ -27,14 +28,29 @@ class SlackService {
   async sendAnnouncement(event: Event) {
     const users = await this.slackRepository.getUsersDetails(event.accepted);
     const userIds = users.map((user) => user.id!);
+
     const { blocks, text } = getAnnouncementBlock(
       userIds,
       event.reservationUser!,
       event.expenseUser!,
       event.time,
+      event.channelId,
     );
 
-    await this.slackRepository.sendBlocks(event.channelId, blocks, text);
+    for (const userId of userIds) {
+      await this.sendAnnouncementToUser(userId, blocks, text);
+    }
+    // Don't invite for now, requires "Channels/Manage permissions"
+    // await this.ensureInvitedToAnnouncementChannel(userIds);
+    await this.sendAnnouncementToAnnouncementChannel(blocks, text);
+  }
+
+  private async sendAnnouncementToAnnouncementChannel(blocks: SectionBlock[], text: string) {
+    await this.slackRepository.sendBlocks(await this.announcementChannelId(), blocks, text);
+  }
+
+  private async sendAnnouncementToUser(userId: string, blocks: SectionBlock[], text: string) {
+    await this.slackRepository.sendBlocksToUser(userId, blocks, text);
   }
 
   private async announcementChannelId() {
@@ -47,7 +63,7 @@ class SlackService {
     return this.cachedAnnouncementChannelId!;
   }
 
-  private async ensureInvitedToChannel(userIds: string[]) {
+  private async ensureInvitedToAnnouncementChannel(userIds: string[]) {
     await this.slackRepository.inviteToChannel(userIds, await this.announcementChannelId());
   }
 

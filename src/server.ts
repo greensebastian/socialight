@@ -1,6 +1,8 @@
-import { App, KnownEventFromType, SayFn } from '@slack/bolt';
+import {
+  App, KnownEventFromType, RespondArguments, SayFn, SectionBlock } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
 import Config from '@models/config';
+import { SecureContext } from 'tls';
 import FileRepository from './repositories/fileRepository';
 import EventService from './services/eventService';
 import SlackService from './services/slackService';
@@ -18,8 +20,8 @@ import {
   getOptedOutBlock,
 } from './util/blocks';
 
-const env = process.env.NODE_ENV || 'development';
-const envPath = env === 'production' ? '.env' : '.env.development';
+// const env = process.env.NODE_ENV || 'development';
+const envPath = '.env';
 
 configDotenv({ path: envPath });
 
@@ -31,7 +33,7 @@ const botAuthorInfo = {
 const slack = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
-  socketMode: false,
+  socketMode: process.env.SOCKET_MODE === 'true',
   appToken: process.env.SLACK_APP_TOKEN,
 });
 
@@ -66,6 +68,15 @@ const schedulingService = new SchedulingService(
   slackService,
   configRepository,
 );
+
+const createResponseMessage = (blocks: SectionBlock[]): RespondArguments => {
+  const response: RespondArguments = {
+    blocks,
+    replace_original: true,
+    ...botAuthorInfo,
+  } as RespondArguments;
+  return response;
+};
 
 type Handler = (
   text: string,
@@ -122,8 +133,7 @@ const planHandler: Handler = async (text, say) => {
 };
 
 const clearHandler: Handler = async (text, say) => {
-  const actionId = 'clear';
-  if (actionId !== 'clear') return false;
+  if (text.toLowerCase() !== 'clear') return false;
 
   await stateRepository.setEvents([]);
   await stateRepository.setOptedOut([]);
@@ -193,11 +203,7 @@ slack.action('optIn', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   await planningService.optIn(userId);
   const { blocks } = getOptedInBlock();
-  respond({
-    blocks,
-    replace_original: true,
-    ...botAuthorInfo,
-  });
+  await respond(createResponseMessage(blocks));
 });
 
 slack.action('optOut', async ({ ack, body, respond }) => {
@@ -205,11 +211,7 @@ slack.action('optOut', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   await planningService.optOut(userId);
   const { blocks } = getOptedOutBlock();
-  respond({
-    blocks,
-    replace_original: true,
-    ...botAuthorInfo,
-  });
+  await respond(createResponseMessage(blocks));
 });
 
 slack.action('acceptInvite', async ({ ack, body, respond }) => {
@@ -217,11 +219,7 @@ slack.action('acceptInvite', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   const event = await eventService.acceptInvitation(userId);
   const { blocks } = getAcceptResponseBlock(event!.channelId, event!.time);
-  respond({
-    blocks,
-    replace_original: true,
-    ...botAuthorInfo,
-  });
+  await respond(createResponseMessage(blocks));
 });
 
 slack.action('declineInvite', async ({ ack, body, respond }) => {
@@ -229,11 +227,7 @@ slack.action('declineInvite', async ({ ack, body, respond }) => {
   const userId = body.user.id;
   const event = await eventService.declineInvitation(userId);
   const { blocks } = getDeclineResponseBlock(event!.channelId, event!.time);
-  respond({
-    blocks,
-    replace_original: true,
-    ...botAuthorInfo,
-  });
+  await respond(createResponseMessage(blocks));
 });
 
 slack.message(async ({ message, say }) => {
@@ -263,7 +257,7 @@ slack.message(async ({ message, say }) => {
   }
 
   await slack.start(port, {
-    SNICallback: (_, cb) => {
+    SNICallback: (_: any, cb: (arg0: null, arg1: SecureContext | undefined) => void) => {
       cb(null, getCtx());
     },
   });

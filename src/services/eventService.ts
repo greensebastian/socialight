@@ -156,7 +156,7 @@ class EventService {
       };
     }
     await this.updateEvent(updatedEvent);
-    return event;
+    return updatedEvent;
   }
 
   private static async createInvites(users: string[]): Promise<Invite[]> {

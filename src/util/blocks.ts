@@ -104,6 +104,7 @@ export const getAnnouncementBlock = (
   reservationUser: string,
   expenseUser: string,
   date: Date,
+  channelId: string,
 ) => ({
   blocks: [
     {
@@ -111,10 +112,10 @@ export const getAnnouncementBlock = (
       fields: [
         {
           type: 'mrkdwn',
-          text: `On ${getDateMd(date)}, ${getUsersMd(userIds)} will get together for pizza.
+          text: `On ${getDateMd(date)}, ${getUsersMd(userIds)} from ${getChannelMd(channelId)} will get together for pizza.
 ${getUserMd(reservationUser)} will make the reservation for the group.
 ${getUserMd(expenseUser)} will expense the pizza afterwards.
-The rest will show up and have a good time.`,
+The rest will show up and have a good time :partying_face:`,
         },
       ],
     } as SectionBlock,
@@ -144,7 +145,7 @@ export const getAcceptResponseBlock = (channelId: string, date: Date) => ({
 const getDeclineResponseText = (channelId: string, date: Date) =>
   `You've *declined* the invite for pizza with ${getChannelMd(channelId)} on ${getDateMd(
     date,
-  )}. Hope to see some other time!`;
+  )}. Hope to see you some other time!`;
 export const getDeclineResponseBlock = (channelId: string, date: Date) => ({
   blocks: [
     {
@@ -154,7 +155,7 @@ export const getDeclineResponseBlock = (channelId: string, date: Date) => ({
           type: 'mrkdwn',
           text: `You've *declined* the invite for pizza with ${getChannelMd(
             channelId,
-          )} on ${getDateMd(date)}. Hope to see some other time!`,
+          )} on ${getDateMd(date)}. Hope to see you some other time!`,
         },
       ],
     } as SectionBlock,

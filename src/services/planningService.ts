@@ -68,7 +68,7 @@ class PlanningService {
     const currentTime = this.dateService.now();
     const now = dayjs(currentTime.toUTCString());
 
-    // Dont schedule within 1 weeks
+    // Schedule two mondays away at the earliest
     const twoWeeksOut = now.add(8 - now.day(), 'day').add(0, 'day');
     // Add 0-3 days to randomize monday through thursday
     const daysToAdd = this.randomService.getInt(4);
