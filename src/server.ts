@@ -1,9 +1,9 @@
 import {
-  App, KnownEventFromType, RespondArguments, SayFn, SectionBlock,
+  App, BlockButtonAction, KnownEventFromType, RespondArguments, SayFn, SectionBlock,
 } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
-import Config from '@models/config';
 import { SecureContext } from 'tls';
+import Config from './models/config';
 import FileRepository from './repositories/fileRepository';
 import EventService from './services/eventService';
 import SlackService from './services/slackService';
@@ -48,7 +48,7 @@ const randomService = new RandomService();
 
 const eventService = new EventService(stateRepository, dateService, randomService);
 
-const slackService = new SlackService(slackRepository, stateRepository);
+const slackService = new SlackService(slackRepository, stateRepository, eventService);
 
 const planningService = new PlanningService(
   stateRepository,
@@ -202,28 +202,50 @@ slack.action('optIn', async ({ ack, body }) => {
   await ack();
   const userId = body.user.id;
   await planningService.optIn(userId);
+  await slackService.refreshHomeScreen(userId);
 });
 
 slack.action('optOut', async ({ ack, body }) => {
   await ack();
   const userId = body.user.id;
   await planningService.optOut(userId);
+  await slackService.refreshHomeScreen(userId);
 });
 
 slack.action('acceptInvite', async ({ ack, body, respond }) => {
   await ack();
-  const userId = body.user.id;
-  const event = await eventService.acceptInvitation(userId);
-  const { blocks } = getAcceptResponseBlock(event!.channelId, event!.time);
-  await respond(createResponseMessage(blocks));
+  const actionBody = body as BlockButtonAction;
+  const userId = actionBody.user.id;
+  const eventId = actionBody.actions[0].value;
+
+  if (!userId || !eventId) throw new Error('Missing user or event id');
+
+  const event = await eventService.acceptInvitation(userId, eventId);
+  if (!event) return;
+  const { blocks } = getAcceptResponseBlock(event.channelId, event.time);
+  await slackService.refreshHomeScreen(userId);
+
+  if (respond) {
+    await respond(createResponseMessage(blocks));
+  }
 });
 
 slack.action('declineInvite', async ({ ack, body, respond }) => {
   await ack();
-  const userId = body.user.id;
-  const event = await eventService.declineInvitation(userId);
-  const { blocks } = getDeclineResponseBlock(event!.channelId, event!.time);
-  await respond(createResponseMessage(blocks));
+  const actionBody = body as BlockButtonAction;
+  const userId = actionBody.user.id;
+  const eventId = actionBody.actions[0].value;
+
+  if (!userId || !eventId) throw new Error('Missing user or event id');
+
+  const event = await eventService.declineInvitation(userId, eventId);
+  if (!event) return;
+  const { blocks } = getDeclineResponseBlock(event.channelId, event.time);
+  await slackService.refreshHomeScreen(userId);
+
+  if (respond) {
+    await respond(createResponseMessage(blocks));
+  }
 });
 
 slack.message(async ({ message, say }) => {

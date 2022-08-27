@@ -65,6 +65,9 @@ class SchedulingService {
       if (event.accepted.length === config.participants && !event.announced) {
         const finalizedEvent = await this.eventService.finalizeAndUpdateEvent(event);
         await this.slackService.sendAnnouncement(finalizedEvent);
+        for (const userId of event.accepted) {
+          await this.slackService.refreshHomeScreen(userId);
+        }
       }
     }
   }
@@ -113,12 +116,12 @@ class SchedulingService {
       for (const invite of event.invites) {
         const now = this.dateService.now();
         if (await this.shouldSendReminder(invite)) {
-          await this.slackService.sendReminder(invite, event.channelId, event.time);
+          await this.slackService.sendReminder(invite, event.channelId, event.time, event.id);
           invite.reminderSent = now;
           await this.eventService.updateEvent(event);
         }
         if (await this.shouldSendInvite(invite)) {
-          await this.slackService.sendInvite(invite, event.channelId, event.time);
+          await this.slackService.sendInvite(invite, event.channelId, event.time, event.id);
           invite.inviteSent = now;
           invite.reminderSent = now;
           await this.eventService.updateEvent(event);

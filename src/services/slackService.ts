@@ -1,4 +1,4 @@
-import { Event, Invite } from '@models/event';
+import { Event, EventUtil, Invite } from '@models/event';
 import SlackRepository from '@repositories/slackRepository';
 import { SectionBlock } from '@slack/bolt';
 import { IStateRepository } from 'src/core/interface';
@@ -11,6 +11,7 @@ import {
   getOptedOutBlock,
   getReminderBlock,
 } from '../util/blocks';
+import EventService from './eventService';
 
 class SlackService {
   private cachedAnnouncementChannelId: string | undefined = undefined;
@@ -18,15 +19,16 @@ class SlackService {
   constructor(
     private slackRepository: SlackRepository,
     private stateRepository: IStateRepository,
+    private eventService: EventService,
   ) {}
 
-  async sendInvite(invite: Invite, channelId: string, date: Date) {
-    const { blocks, text } = getInvitationBlock(channelId, date);
+  async sendInvite(invite: Invite, channelId: string, date: Date, eventId: string) {
+    const { blocks, text } = getInvitationBlock(channelId, date, eventId);
     await this.slackRepository.sendEphemeralBlocks(channelId, invite.userId, blocks, text);
   }
 
-  async sendReminder(invite: Invite, channelId: string, date: Date) {
-    const { blocks, text } = getReminderBlock(channelId, date);
+  async sendReminder(invite: Invite, channelId: string, date: Date, eventId: string) {
+    const { blocks, text } = getReminderBlock(channelId, date, eventId);
     await this.slackRepository.sendEphemeralBlocks(channelId, invite.userId, blocks, text);
   }
 
@@ -89,8 +91,16 @@ class SlackService {
 
   async refreshHomeScreen(userId: string) {
     const userOptedOut = (await this.stateRepository.getOptedOut()).includes(userId);
+    const events = await this.eventService.getUserEvents(userId);
 
-    await this.slackRepository.publishHomeView(userId, getHomeBlock(userOptedOut).blocks);
+    const accepted = events.filter((ev) => EventUtil.hasAccepted(ev, userId));
+    const declined = events.filter((ev) => EventUtil.hasDeclined(ev, userId));
+    const invited = events.filter((ev) => EventUtil.isInvited(ev, userId));
+
+    await this.slackRepository.publishHomeView(
+      userId,
+      getHomeBlock(userOptedOut, invited, accepted, declined).blocks,
+    );
   }
 }
 

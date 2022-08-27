@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { ActionsBlock, DividerBlock, SectionBlock } from '@slack/web-api';
+import { Event } from '@models/event';
 
 const dateFormat = (date: Date) => {
   const d = dayjs(date);
@@ -19,7 +20,7 @@ const getDateMd = (date: Date) => `*${dateFormat(date)}*`;
 
 const getInvitationText = (channelId: string, date: Date) =>
   `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)}`;
-export const getInvitationBlock = (channelId: string, date: Date) => ({
+export const getInvitationBlock = (channelId: string, date: Date, eventId: string) => ({
   blocks: [
     {
       type: 'section',
@@ -38,6 +39,7 @@ export const getInvitationBlock = (channelId: string, date: Date) => ({
           type: 'button',
           style: 'primary',
           action_id: 'acceptInvite',
+          value: eventId,
           text: {
             type: 'plain_text',
             text: 'Accept',
@@ -46,6 +48,7 @@ export const getInvitationBlock = (channelId: string, date: Date) => ({
         {
           type: 'button',
           action_id: 'declineInvite',
+          value: eventId,
           text: {
             type: 'plain_text',
             text: 'Decline',
@@ -61,7 +64,7 @@ const getReminderText = (channelId: string, date: Date) =>
   `Reminder: You haven't responded to the invite to have pizza with ${getChannelMd(
     channelId,
   )} on ${getDateMd(date)}`;
-export const getReminderBlock = (channelId: string, date: Date) => ({
+export const getReminderBlock = (channelId: string, date: Date, eventId: string) => ({
   blocks: [
     {
       type: 'section',
@@ -80,6 +83,7 @@ export const getReminderBlock = (channelId: string, date: Date) => ({
           type: 'button',
           style: 'primary',
           action_id: 'accept',
+          value: eventId,
           text: {
             type: 'plain_text',
             text: 'Accept',
@@ -88,6 +92,7 @@ export const getReminderBlock = (channelId: string, date: Date) => ({
         {
           type: 'button',
           action_id: 'decline',
+          value: eventId,
           text: {
             type: 'plain_text',
             text: 'Decline',
@@ -216,7 +221,12 @@ export const getOptedInBlock = () => ({
   text: optedInText,
 });
 
-export const getHomeBlock = (optedOut: boolean) => ({
+export const getHomeBlock = (
+  optedOut: boolean,
+  invited: Event[],
+  accepted: Event[],
+  declined: Event[],
+) => ({
   blocks: [
     {
       type: 'section',
@@ -261,6 +271,22 @@ export const getHomeBlock = (optedOut: boolean) => ({
           },
       ],
     } as ActionsBlock,
+    {
+      type: 'divider',
+    } as DividerBlock,
+    ...invited.flatMap((ev) => getInvitationBlock(ev.channelId, ev.time, ev.id).blocks),
+    ...accepted.filter((ev) => ev.announced).flatMap((ev) => getAnnouncementBlock(
+      ev.accepted,
+      ev.reservationUser!,
+      ev.expenseUser!,
+      ev.time,
+      ev.channelId,
+    ).blocks),
+    ...accepted.filter((ev) => !ev.announced).flatMap((ev) => getAcceptResponseBlock(
+      ev.channelId,
+      ev.time,
+    ).blocks),
+    ...declined.flatMap((ev) => getDeclineResponseBlock(ev.channelId, ev.time).blocks),
   ],
   text: '',
 });

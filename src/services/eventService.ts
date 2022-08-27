@@ -1,4 +1,4 @@
-import { Event, Invite } from '@models/event';
+import { Event, EventUtil, Invite } from '@models/event';
 import DateService from '@services/dateService';
 import { Guid } from 'guid-typescript';
 import { IStateRepository } from 'src/core/interface';
@@ -23,6 +23,16 @@ class EventService {
   }
 
   /**
+   * Find specific event
+   * @param eventId
+   * @returns array of all events
+   */
+  async getEvent(eventId: string): Promise<Event | undefined> {
+    const events = await this.stateRepository.getEvents();
+    return events.find((ev) => ev.id === eventId);
+  }
+
+  /**
    * Find all events for a certain user
    * @param userId Id of user to find events for
    * @param expired if true, include previous events
@@ -31,10 +41,7 @@ class EventService {
   async getUserEvents(userId: string, expired: boolean = false): Promise<Event[]> {
     const events = await this.getAllEvents(expired);
     const userEvents = events.filter(
-      (event) =>
-        event.invites.some((inv) => inv.userId === userId) ||
-        event.accepted.includes(userId) ||
-        event.declined.includes(userId),
+      (event) => EventUtil.isInvolved(event, userId),
     );
     return userEvents;
   }
@@ -69,10 +76,9 @@ class EventService {
    */
   async acceptInvitation(
     userId: string,
-    channelId: string | undefined = undefined,
+    eventId: string,
   ): Promise<Event | undefined> {
-    const events = await this.getAllEvents();
-    const event = await this.findEventToRespondTo(events, userId, channelId);
+    const event = await this.getEvent(eventId);
     if (!event) return undefined;
 
     const userInvite = event.invites.find((invite) => invite.userId === userId);
@@ -89,10 +95,9 @@ class EventService {
    */
   async declineInvitation(
     userId: string,
-    channelId: string | undefined = undefined,
+    eventId: string,
   ): Promise<Event | undefined> {
-    const events = await this.getAllEvents();
-    const event = await this.findEventToRespondTo(events, userId, channelId);
+    const event = await this.getEvent(eventId);
     if (!event) return undefined;
 
     const userInvite = event.invites.find((invite) => invite.userId === userId);
@@ -102,18 +107,19 @@ class EventService {
     return undefined;
   }
 
+  async inviteToEvent(event: Event, userIds: string[]) {
+    const updatedEvent = EventUtil.invite(event, userIds);
+    await this.updateEvent(updatedEvent);
+  }
+
   private async acceptEvent(event: Event, userId: string): Promise<Event> {
-    const newEvent = { ...event };
-    newEvent.invites = event.invites.filter((invite) => invite.userId !== userId);
-    newEvent.accepted.push(userId);
+    const newEvent = EventUtil.acceptEvent(event, userId);
     await this.updateEvent(newEvent);
     return newEvent;
   }
 
   private async declineEvent(event: Event, userId: string): Promise<Event> {
-    const newEvent = { ...event };
-    newEvent.invites = event.invites.filter((invite) => invite.userId !== userId);
-    newEvent.declined.push(userId);
+    const newEvent = EventUtil.declineEvent(event, userId);
     await this.updateEvent(newEvent);
     return newEvent;
   }
@@ -127,34 +133,15 @@ class EventService {
     await this.stateRepository.setEvents(updatedEvents);
   }
 
-  async inviteToEvent(event: Event, userIds: string[]) {
-    event.invites.concat(await EventService.createInvites(userIds));
-    await this.updateEvent(event);
-  }
-
   async finalizeAndUpdateEvent(event: Event) {
-    // eslint-disable-next-line no-param-reassign
-    let updatedEvent = {
-      ...event,
-      announced: true,
-    };
+    const reservationUser = this.randomService.shuffleArray(event.accepted)[0];
+    const remainingAcceptedUsers = event.accepted.filter((user) => user !== reservationUser);
+    const expenseUser = remainingAcceptedUsers.length > 0
+      ? remainingAcceptedUsers[0]
+      : reservationUser;
 
-    if (event.accepted.length === 1) {
-      updatedEvent = {
-        ...updatedEvent,
-        reservationUser: event.accepted[0],
-        expenseUser: event.accepted[0],
-      };
-    } else {
-      const reservationUser = this.randomService.shuffleArray(event.accepted)[0];
-      const remainingAcceptedUsers = event.accepted.filter((user) => user !== reservationUser);
-      const expenseUser = this.randomService.shuffleArray(remainingAcceptedUsers)[0];
-      updatedEvent = {
-        ...updatedEvent,
-        reservationUser,
-        expenseUser,
-      };
-    }
+    const updatedEvent = EventUtil.announceAndFinalize(event, reservationUser, expenseUser);
+
     await this.updateEvent(updatedEvent);
     return updatedEvent;
   }
@@ -168,27 +155,6 @@ class EventService {
       };
       return invite;
     });
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  private async findEventToRespondTo(
-    events: Event[],
-    userId: string,
-    channelId: string | undefined,
-  ): Promise<Event | undefined> {
-    EventService.sortByDate(events);
-    if (channelId) {
-      return events.find((event) => event.channelId === channelId);
-    }
-
-    for (const event of events) {
-      const userInvite = event.invites.find((invite) => invite.userId === userId);
-      if (userInvite) {
-        return event;
-      }
-    }
-
-    return undefined;
   }
 
   static sortByDate(events: Event[]) {

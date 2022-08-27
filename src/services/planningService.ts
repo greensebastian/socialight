@@ -51,7 +51,6 @@ class PlanningService {
     const optedOut = await this.stateRepository.getOptedOut();
     if (!optedOut.includes(userId)) {
       await this.stateRepository.setOptedOut(optedOut.concat(userId));
-      await this.slackService.refreshHomeScreen(userId);
     }
     return [];
   }
@@ -64,7 +63,6 @@ class PlanningService {
     const optedOut = await this.stateRepository.getOptedOut();
     if (optedOut.includes(userId)) {
       await this.stateRepository.setOptedOut(optedOut.filter((id) => id !== userId));
-      await this.slackService.refreshHomeScreen(userId);
     }
   }
 
@@ -73,10 +71,12 @@ class PlanningService {
     const now = dayjs(currentTime.toUTCString());
 
     // Schedule two mondays away at the earliest
-    const twoWeeksOut = now.add(8 - now.day(), 'day').add(0, 'day');
+    const nextSunday = now.add(7 - now.day(), 'day');
+    const mondayTwoWeeksOut = nextSunday.add(8, 'day');
+
     // Add 0-3 days to randomize monday through thursday
     const daysToAdd = this.randomService.getInt(4);
-    const dayOfMeeting = twoWeeksOut.add(daysToAdd, 'day');
+    const dayOfMeeting = mondayTwoWeeksOut.add(daysToAdd, 'day');
     // Normalize to 17:00
     return dayOfMeeting.startOf('day').add(17, 'hour').toDate();
   }
