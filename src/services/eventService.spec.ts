@@ -1,4 +1,3 @@
-import '@types/jest';
 import { Event } from '@models/event';
 import { IStateRepository } from 'src/core/interface';
 import DateService from './dateService';
