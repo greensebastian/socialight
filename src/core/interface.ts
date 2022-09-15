@@ -1,4 +1,4 @@
-import { Event } from '@models/event';
+import { Event } from 'src/models/event';
 
 export interface IStateRepository {
   getOptedOut(): Promise<string[]>;

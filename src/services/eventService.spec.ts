@@ -1,5 +1,5 @@
-import { Event } from '@models/event';
 import { IStateRepository } from 'src/core/interface';
+import { Event } from 'src/models/event';
 import DateService from './dateService';
 import EventService from './eventService';
 import RandomService from './randomService';

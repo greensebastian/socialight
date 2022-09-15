@@ -1,8 +1,8 @@
 import { App, Block } from '@slack/bolt';
 import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse';
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
-import ConfigRepository from '@repositories/configRepository';
 import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
+import ConfigRepository from './configRepository';
 
 export type AuthorInfo = {
   username: string;

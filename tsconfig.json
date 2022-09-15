@@ -1,11 +1,5 @@
 {
   "compilerOptions": {
-    "paths": {
-      "@models/*": ["./src/models/*"],
-      "@repositories/*": ["./src/repositories/*"],
-      "@services/*": ["./src/services/*"]
-    },
-
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
 
     /* Basic Options */

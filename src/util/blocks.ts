@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { ActionsBlock, DividerBlock, SectionBlock } from '@slack/web-api';
-import { Event } from '@models/event';
+import { Event } from 'src/models/event';
 
 const dateFormat = (date: Date) => {
   const d = dayjs(date);

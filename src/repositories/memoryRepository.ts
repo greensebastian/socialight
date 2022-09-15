@@ -1,5 +1,5 @@
-import { Event } from '@models/event';
 import { IStateRepository } from 'src/core/interface';
+import { Event } from 'src/models/event';
 
 const KEY_EVENTS = 'EVENTS';
 const KEY_OPT_OUT = 'OPT_OUT';
