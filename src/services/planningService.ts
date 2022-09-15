@@ -1,12 +1,12 @@
+import DateService from '@services/dateService';
 import dayjs from 'dayjs';
+import RandomService from '@services/randomService';
+import { Event } from '@models/event';
 import { IStateRepository } from 'src/core/interface';
-import { Event } from 'src/models/event';
 import SlackRepository from '../repositories/slackRepository';
 import ConfigRepository from '../repositories/configRepository';
 import EventService from './eventService';
 import SlackService from './slackService';
-import DateService from './dateService';
-import RandomService from './randomService';
 
 class PlanningService {
   constructor(
