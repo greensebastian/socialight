@@ -73,7 +73,7 @@ const createResponseMessage = (blocks: SectionBlock[]): RespondArguments => {
   const response: RespondArguments = {
     blocks,
     replace_original: true,
-    ...botAuthorInfo,
+    // ...botAuthorInfo,
   } as RespondArguments;
   return response;
 };

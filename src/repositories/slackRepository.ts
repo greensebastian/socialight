@@ -145,7 +145,7 @@ class SlackRepository {
     await this.slack.client.chat.postMessage({
       channel: conversation.channel!.id!,
       text,
-      ...this.botAuthorInfo,
+      // ...this.botAuthorInfo,
     });
   }
 
@@ -173,7 +173,7 @@ class SlackRepository {
       channel: channelId,
       blocks,
       text: markdown,
-      ...this.botAuthorInfo,
+      // ...this.botAuthorInfo,
     });
   }
 
@@ -182,7 +182,7 @@ class SlackRepository {
       channel: channelId,
       blocks,
       text,
-      ...this.botAuthorInfo,
+      // ...this.botAuthorInfo,
     });
   }
 
@@ -192,7 +192,7 @@ class SlackRepository {
       user: userId,
       blocks,
       text,
-      ...this.botAuthorInfo,
+      // ...this.botAuthorInfo,
     });
   }
 
