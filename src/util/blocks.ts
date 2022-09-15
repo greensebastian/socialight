@@ -20,7 +20,8 @@ const getDateMd = (date: Date) => `*${dateFormat(date)}*`;
 
 const getInvitationText = (channelId: string, date: Date) =>
   `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)}`;
-export const getInvitationBlock = (channelId: string, date: Date, eventId: string) => ({
+
+export const getInvitationTextBlock = (channelId: string, date: Date) => ({
   blocks: [
     {
       type: 'section',
@@ -31,9 +32,15 @@ export const getInvitationBlock = (channelId: string, date: Date, eventId: strin
         },
       ],
     } as SectionBlock,
+  ],
+});
+
+export const getInvitationBlock = (channelId: string, date: Date, eventId: string) => ({
+  blocks: [
+    ...getInvitationTextBlock(channelId, date).blocks,
     {
       type: 'actions',
-      block_id: 'actions',
+      block_id: `invite_actions_${eventId}`,
       elements: [
         {
           type: 'button',
@@ -77,7 +84,7 @@ export const getReminderBlock = (channelId: string, date: Date, eventId: string)
     } as SectionBlock,
     {
       type: 'actions',
-      block_id: 'actions',
+      block_id: `reminder_actions_${eventId}`,
       elements: [
         {
           type: 'button',
@@ -274,7 +281,7 @@ export const getHomeBlock = (
     {
       type: 'divider',
     } as DividerBlock,
-    ...invited.flatMap((ev) => getInvitationBlock(ev.channelId, ev.time, ev.id).blocks),
+    ...invited.flatMap((ev) => getInvitationTextBlock(ev.channelId, ev.time).blocks),
     ...accepted.filter((ev) => ev.announced).flatMap((ev) => getAnnouncementBlock(
       ev.accepted,
       ev.reservationUser!,
