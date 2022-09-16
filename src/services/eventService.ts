@@ -1,7 +1,7 @@
 import { Event, EventUtil, Invite } from '@models/event';
 import DateService from '@services/dateService';
 import { Guid } from 'guid-typescript';
-import { IStateRepository } from 'src/core/interface';
+import { IStateRepository } from 'core/interface';
 import RandomService from './randomService';
 
 class EventService {

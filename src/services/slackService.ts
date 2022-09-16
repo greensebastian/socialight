@@ -1,7 +1,7 @@
 import { Event, EventUtil, Invite } from '@models/event';
 import SlackRepository from '@repositories/slackRepository';
 import { SectionBlock } from '@slack/bolt';
-import { IStateRepository } from 'src/core/interface';
+import { IStateRepository } from 'core/interface';
 import {
   getAnnouncementBlock,
   getEventCancelledBlock,

@@ -12,5 +12,5 @@ module.exports = {
   testEnvironment: 'node',
   collectCoverage: true,
   verbose: true,
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.compilerOptions.paths, { prefix: '<rootDir>/' }),
+  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.compilerOptions.paths, { prefix: '<rootDir>/src/' }),
 };
