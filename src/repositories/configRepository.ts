@@ -1,4 +1,4 @@
-import Config from 'src/models/config';
+import Config from '@models/config';
 
 class ConfigRepository {
   private config: Config;

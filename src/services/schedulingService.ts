@@ -1,8 +1,8 @@
+import { Invite } from '@models/event';
+import ConfigRepository from '@repositories/configRepository';
+import SlackRepository from '@repositories/slackRepository';
 import dayjs from 'dayjs';
 import { Job, scheduleJob } from 'node-schedule';
-import { Invite } from 'src/models/event';
-import ConfigRepository from 'src/repositories/configRepository';
-import SlackRepository from 'src/repositories/slackRepository';
 import DateService from './dateService';
 import EventService from './eventService';
 import PlanningService from './planningService';
