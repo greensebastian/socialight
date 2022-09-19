@@ -39,6 +39,7 @@ class SchedulingService {
       await this.expireOldInvites();
       await this.createNewInvites();
       await this.sendInvitesAndReminders();
+      await this.cancelEventWithoutEnoughInvites();
     });
 
     this.running = true;
@@ -126,6 +127,18 @@ class SchedulingService {
           invite.reminderSent = now;
           await this.eventService.updateEvent(event);
         }
+      }
+    }
+  }
+
+  private async cancelEventWithoutEnoughInvites() {
+    const events = await this.eventService.getAllEvents();
+    const maxParticipants = (await this.configRepository.getConfig()).participants;
+
+    for (const event of events) {
+      if (event.accepted.length + event.invites.length < maxParticipants) {
+        this.planningService.removeSingleEvent(event);
+        await this.slackService.sendFailedEventNotification(event);
       }
     }
   }

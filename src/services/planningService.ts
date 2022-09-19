@@ -2,7 +2,7 @@ import DateService from '@services/dateService';
 import dayjs from 'dayjs';
 import RandomService from '@services/randomService';
 import { Event } from '@models/event';
-import { IStateRepository } from 'core/interface';
+import { IStateRepository } from '../core/interface';
 import SlackRepository from '../repositories/slackRepository';
 import ConfigRepository from '../repositories/configRepository';
 import EventService from './eventService';
@@ -107,6 +107,13 @@ class PlanningService {
     await this.stateRepository.setEvents(activeEvents);
 
     return failedEvents;
+  }
+
+  async removeSingleEvent(event: Event) {
+    const events = await this.eventService.getAllEvents();
+    const activeEvents = events.filter(e => e.id != event.id);
+
+    await this.stateRepository.setEvents(activeEvents);
   }
 
   async fillInvites(event: Event) {
