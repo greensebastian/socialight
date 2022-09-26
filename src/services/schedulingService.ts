@@ -137,7 +137,7 @@ class SchedulingService {
 
     for (const event of events) {
       if (event.accepted.length + event.invites.length < maxParticipants) {
-        this.planningService.removeSingleEvent(event);
+        await this.planningService.removeSingleEvent(event);
         await this.slackService.sendFailedEventNotification(event);
       }
     }
