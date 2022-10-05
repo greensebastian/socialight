@@ -3,6 +3,7 @@ import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse'
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
 import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
+import { threadId } from 'worker_threads';
 
 export type AuthorInfo = {
   username: string;
@@ -149,9 +150,9 @@ class SlackRepository {
     });
   }
 
-  async sendMarkdownToUser(userId: string, markdown: string) {
+  async sendMarkdownToUser(userId: string, markdown: string, threadId: string = "") {
     const conversation = await this.openUserConversation(userId);
-    await this.sendMarkdown(conversation.channel!.id!, markdown);
+    return await this.sendMarkdown(conversation.channel!.id!, markdown, threadId);
   }
 
   async sendBlocksToUser(userId: string, blocks: KnownBlock[], text: string) {
@@ -159,7 +160,7 @@ class SlackRepository {
     await this.sendBlocks(conversation.channel!.id!, blocks, text);
   }
 
-  public async sendMarkdown(channelId: string, markdown: string) {
+  public async sendMarkdown(channelId: string, markdown: string, threadId: string) {
     const blocks = [
       {
         type: 'section',
@@ -169,12 +170,15 @@ class SlackRepository {
         },
       },
     ];
-    await this.slack.client.chat.postMessage({
+    const resp = await this.slack.client.chat.postMessage({
       channel: channelId,
       blocks,
       text: markdown,
+      thread_ts: threadId,
       // ...this.botAuthorInfo,
     });
+
+   return resp.ts;
   }
 
   async sendBlocks(channelId: string, blocks: KnownBlock[], text: string) {

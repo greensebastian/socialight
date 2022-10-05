@@ -2,6 +2,7 @@ export interface Invite {
   userId: string;
   inviteSent: Date | undefined;
   reminderSent: Date | undefined;
+  threadId: string | undefined;
 }
 
 export interface Event {
@@ -30,6 +31,7 @@ export const EventUtil = {
           reminderSent: undefined,
           userId,
           inviteSent: undefined,
+          threadId: undefined,
         };
         return invite;
       });

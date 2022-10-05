@@ -32,6 +32,11 @@ class EventService {
     return events.find((ev) => ev.id === eventId);
   }
 
+  async getEventByThreadId(threadId: string): Promise<Event | undefined> {
+    const events = await this.stateRepository.getEvents();
+    return events.find((ev) => ev.invites.find((invite) => invite.threadId === threadId));
+  }
+
   /**
    * Find all events for a certain user
    * @param userId Id of user to find events for
@@ -69,7 +74,22 @@ class EventService {
     return event;
   }
 
-  /**
+
+  async acceptInvitationByThreadId(
+    userId: string,
+    threadId: string,
+  ): Promise<Event | undefined> {
+    const event = await this.getEventByThreadId(threadId);
+    if (!event) return undefined;
+
+    const userInvite = event.invites.find((invite) => invite.userId === userId);
+    if (userInvite) {
+      return this.acceptEvent(event, userId);
+    }
+    return undefined;
+  }
+
+    /**
    * Accepts the first event the user is invited to
    * @param userId Slack ID of user to accept
    * @returns true if an invitation was successfully accepted
@@ -84,6 +104,20 @@ class EventService {
     const userInvite = event.invites.find((invite) => invite.userId === userId);
     if (userInvite) {
       return this.acceptEvent(event, userId);
+    }
+    return undefined;
+  }
+
+  async declineInvitationByThreadId(
+    userId: string,
+    threadId: string,
+  ): Promise<Event | undefined> {
+    const event = await this.getEventByThreadId(threadId);
+    if (!event) return undefined;
+
+    const userInvite = event.invites.find((invite) => invite.userId === userId);
+    if (userInvite) {
+      return this.declineEvent(event, userId);
     }
     return undefined;
   }
@@ -152,6 +186,7 @@ class EventService {
         reminderSent: undefined,
         userId: user,
         inviteSent: undefined,
+        threadId: undefined,
       };
       return invite;
     });
