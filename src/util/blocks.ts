@@ -18,8 +18,8 @@ const getUsersMd = (userIds: string[]): string => {
 };
 const getDateMd = (date: Date) => `*${dateFormat(date)}*`;
 
-const getInvitationText = (channelId: string, date: Date) =>
-  `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)}`;
+export const getInvitationText = (channelId: string, date: Date) =>
+  `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)} :pizza: \n\nRespond by writing *accept* or *decline* in this thread!`;
 
 export const getInvitationTextBlock = (channelId: string, date: Date) => ({
   blocks: [
@@ -67,7 +67,7 @@ export const getInvitationBlock = (channelId: string, date: Date, eventId: strin
   text: getInvitationText(channelId, date),
 });
 
-const getReminderText = (channelId: string, date: Date) =>
+export const getReminderText = (channelId: string, date: Date) =>
   `Reminder: You haven't responded to the invite to have pizza with ${getChannelMd(
     channelId,
   )} on ${getDateMd(date)}`;

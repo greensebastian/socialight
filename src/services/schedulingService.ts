@@ -122,9 +122,10 @@ class SchedulingService {
           await this.eventService.updateEvent(event);
         }
         if (await this.shouldSendInvite(invite)) {
-          await this.slackService.sendInvite(invite, event.channelId, event.time, event.id);
+          const threadId = await this.slackService.sendInvite(invite, event.channelId, event.time, event.id);
           invite.inviteSent = now;
           invite.reminderSent = now;
+          invite.threadId = threadId;
           await this.eventService.updateEvent(event);
         }
       }
@@ -170,7 +171,7 @@ class SchedulingService {
     return (
       (await this.isInActiveHours()) &&
       !!invite.inviteSent &&
-      latestReminder.isBefore(dayjs(this.dateService.now()).subtract(2, 'hour'))
+      latestReminder.isBefore(dayjs(this.dateService.now()).subtract(2, 'second'))
     );
   }
 }

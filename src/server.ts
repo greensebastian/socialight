@@ -69,6 +69,10 @@ const schedulingService = new SchedulingService(
   configRepository,
 );
 
+const getUserId = (message: KnownEventFromType<'message'>) => String((message as any).user);
+
+const getThreadId = (message: KnownEventFromType<'message'>) => String((message as any).thread_ts);
+
 const createResponseMessage = (blocks: SectionBlock[]): RespondArguments => {
   const response: RespondArguments = {
     blocks,
@@ -160,6 +164,26 @@ const stopHandler: Handler = async (text, say) => {
   return true;
 };
 
+const acceptHandler: Handler = async (text, say, message) => {
+  if (text.toLowerCase() !== 'accept') return false;
+  
+  const userId = getUserId(message);
+  const event = await eventService.acceptInvitationByThreadId(userId, getThreadId(message));
+  if (!event) return false;
+  await slackService.refreshHomeScreen(userId);
+  return true;
+};
+
+const declineHandler: Handler = async (text, say, message) => {
+  if (text.toLowerCase() !== 'decline') return false;
+
+  const userId = getUserId(message);
+  const event = await eventService.declineInvitationByThreadId(userId, getThreadId(message));
+  if (!event) return false;
+  await slackService.refreshHomeScreen(userId);
+  return true;
+};
+
 const tickHandler: Handler = async (text) => {
   if (text.toLowerCase() !== 'tick') return false;
 
@@ -182,7 +206,7 @@ const devHandlers: Handler[] = [
   tickHandler,
 ];
 
-const handlers: Handler[] = [fallbackHandler];
+const handlers: Handler[] = [acceptHandler, declineHandler, fallbackHandler];
 
 const activeHandlers: Handler[] = [];
 
