@@ -171,7 +171,7 @@ class SchedulingService {
     return (
       (await this.isInActiveHours()) &&
       !!invite.inviteSent &&
-      latestReminder.isBefore(dayjs(this.dateService.now()).subtract(2, 'second'))
+      latestReminder.isBefore(dayjs(this.dateService.now()).subtract(2, 'hour'))
     );
   }
 }
