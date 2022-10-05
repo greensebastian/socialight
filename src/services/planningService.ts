@@ -111,7 +111,7 @@ class PlanningService {
 
   async removeSingleEvent(event: Event) {
     const events = await this.eventService.getAllEvents();
-    const activeEvents = events.filter(e => e.id != event.id);
+    const activeEvents = events.filter((e) => e.id !== event.id);
 
     await this.stateRepository.setEvents(activeEvents);
   }

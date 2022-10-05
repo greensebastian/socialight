@@ -2,7 +2,6 @@ import { Event, EventUtil, Invite } from '@models/event';
 import SlackRepository from '@repositories/slackRepository';
 import { SectionBlock } from '@slack/bolt';
 import { IStateRepository } from 'core/interface';
-import { threadId } from 'worker_threads';
 import {
   getAnnouncementBlock,
   getEventCancelledBlock,
@@ -10,8 +9,8 @@ import {
   getInvitationText,
   getOptedInBlock,
   getOptedOutBlock,
-  getReminderBlock,
   getReminderText,
+  getUserMd,
 } from '../util/blocks';
 import EventService from './eventService';
 
@@ -24,16 +23,13 @@ class SlackService {
     private eventService: EventService,
   ) {}
 
-  async sendInvite(invite: Invite, channelId: string, date: Date, eventId: string) {
-    return await this.slackRepository.sendMarkdownToUser(invite.userId, getInvitationText(channelId, date), invite.threadId);
-    //const { blocks, text } = getInvitationBlock(channelId, date, eventId);
-    //await this.slackRepository.sendEphemeralBlocks(channelId, invite.userId, blocks, text);
+  async sendInvite(invite: Invite, channelId: string, date: Date) {
+    return this.slackRepository
+      .sendMarkdownToUser(invite.userId, getInvitationText(channelId, date), invite.threadId);
   }
 
-  async sendReminder(invite: Invite, channelId: string, date: Date, eventId: string) {
-    return await this.slackRepository.sendMarkdownToUser(invite.userId, getReminderText(channelId, date) + ` <@${invite.userId}>`, invite.threadId);
-    //const { blocks, text } = getReminderBlock(channelId, date, eventId);
-    //await this.slackRepository.sendEphemeralBlocks(channelId, invite.userId, blocks, text);
+  async sendReminder(invite: Invite, channelId: string, date: Date) {
+    return this.slackRepository.sendMarkdownToUser(invite.userId, `${getReminderText(channelId, date)} ${getUserMd(invite.userId)}>`, invite.threadId);
   }
 
   async sendAnnouncement(event: Event) {

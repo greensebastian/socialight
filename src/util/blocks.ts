@@ -8,7 +8,7 @@ const dateFormat = (date: Date) => {
 };
 
 const getChannelMd = (channelId: string) => `<#${channelId}>`;
-const getUserMd = (userId: string) => `<@${userId}>`;
+export const getUserMd = (userId: string) => `<@${userId}>`;
 const getUsersMd = (userIds: string[]): string => {
   if (userIds.length === 2) return `${getUserMd(userIds[0])} and ${getUserMd(userIds[1])}`;
   if (userIds.length === 1) return getUserMd(userIds[0]);

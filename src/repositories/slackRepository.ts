@@ -3,7 +3,6 @@ import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse'
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
 import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
-import { threadId } from 'worker_threads';
 
 export type AuthorInfo = {
   username: string;
@@ -150,9 +149,9 @@ class SlackRepository {
     });
   }
 
-  async sendMarkdownToUser(userId: string, markdown: string, threadId: string = "") {
+  async sendMarkdownToUser(userId: string, markdown: string, threadId: string = '') {
     const conversation = await this.openUserConversation(userId);
-    return await this.sendMarkdown(conversation.channel!.id!, markdown, threadId);
+    return this.sendMarkdown(conversation.channel!.id!, markdown, threadId);
   }
 
   async sendBlocksToUser(userId: string, blocks: KnownBlock[], text: string) {
@@ -178,7 +177,7 @@ class SlackRepository {
       // ...this.botAuthorInfo,
     });
 
-   return resp.ts;
+    return resp.ts;
   }
 
   async sendBlocks(channelId: string, blocks: KnownBlock[], text: string) {

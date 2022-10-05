@@ -74,7 +74,6 @@ class EventService {
     return event;
   }
 
-
   async acceptInvitationByThreadId(
     userId: string,
     threadId: string,
@@ -89,7 +88,7 @@ class EventService {
     return undefined;
   }
 
-    /**
+  /**
    * Accepts the first event the user is invited to
    * @param userId Slack ID of user to accept
    * @returns true if an invitation was successfully accepted

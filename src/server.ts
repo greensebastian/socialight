@@ -166,7 +166,7 @@ const stopHandler: Handler = async (text, say) => {
 
 const acceptHandler: Handler = async (text, say, message) => {
   if (text.toLowerCase() !== 'accept') return false;
-  
+
   const userId = getUserId(message);
   const event = await eventService.acceptInvitationByThreadId(userId, getThreadId(message));
   if (!event) return false;
