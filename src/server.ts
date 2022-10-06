@@ -1,5 +1,5 @@
 import {
-  App, BlockButtonAction, KnownEventFromType, RespondArguments, SayArguments, SayFn, SectionBlock
+  App, BlockButtonAction, KnownEventFromType, RespondArguments, SayArguments, SayFn, SectionBlock,
 } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
 import { SecureContext } from 'tls';
