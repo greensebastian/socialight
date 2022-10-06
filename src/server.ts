@@ -82,11 +82,11 @@ const createResponseMessage = (blocks: SectionBlock[]): RespondArguments => {
   return response;
 };
 
-const createResponseSayMessage = (threadId: string, blocks: SectionBlock[]): SayArguments => {
+const createResponseSayMessage = (threadId: string, blocks: SectionBlock[], text: string,): SayArguments => {
   const response: SayArguments = {
     thread_ts: threadId,
     blocks,
-    text: "", //text has to be present in order for it to work
+    text,
   } as SayArguments;
   return response;
 };
@@ -179,9 +179,9 @@ const acceptHandler: Handler = async (text, say, message) => {
   const userId = getUserId(message);
   const event = await eventService.acceptInvitationByThreadId(userId, getThreadId(message));
   if (!event) return false;
-  const { blocks } = getAcceptResponseBlock(event.channelId, event.time);
+  const resp = getAcceptResponseBlock(event.channelId, event.time);
   await slackService.refreshHomeScreen(userId);
-  await say(createResponseSayMessage(getThreadId(message), blocks));
+  await say(createResponseSayMessage(getThreadId(message), resp.blocks, resp.text));
   return true;
 };
 
@@ -191,9 +191,9 @@ const declineHandler: Handler = async (text, say, message) => {
   const userId = getUserId(message);
   const event = await eventService.declineInvitationByThreadId(userId, getThreadId(message));
   if (!event) return false;
-  const { blocks } = getDeclineResponseBlock(event.channelId, event.time);
+  const resp = getDeclineResponseBlock(event.channelId, event.time);
   await slackService.refreshHomeScreen(userId);
-  await say(createResponseSayMessage(getThreadId(message), blocks));
+  await say(createResponseSayMessage(getThreadId(message), resp.blocks, resp.text));
   return true;
 };
 
