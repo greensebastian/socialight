@@ -82,7 +82,11 @@ const createResponseMessage = (blocks: SectionBlock[]): RespondArguments => {
   return response;
 };
 
-const createResponseSayMessage = (threadId: string, blocks: SectionBlock[], text: string,): SayArguments => {
+const createResponseSayMessage = (
+  threadId: string, 
+  blocks: SectionBlock[], 
+  text: string,): 
+  SayArguments => {
   const response: SayArguments = {
     thread_ts: threadId,
     blocks,
