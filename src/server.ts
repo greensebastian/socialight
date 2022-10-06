@@ -83,9 +83,10 @@ const createResponseMessage = (blocks: SectionBlock[]): RespondArguments => {
 };
 
 const createResponseSayMessage = (
-  threadId: string, 
-  blocks: SectionBlock[], 
-  text: string,): 
+  threadId: string,
+  blocks: SectionBlock[],
+  text: string,
+):
   SayArguments => {
   const response: SayArguments = {
     thread_ts: threadId,
