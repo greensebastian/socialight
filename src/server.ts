@@ -1,5 +1,5 @@
 import {
-  App, BlockButtonAction, KnownEventFromType, RespondArguments, SayFn, SectionBlock,
+  App, BlockButtonAction, KnownEventFromType, RespondArguments, SayArguments, SayFn, SectionBlock,
 } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
 import { SecureContext } from 'tls';
@@ -79,6 +79,20 @@ const createResponseMessage = (blocks: SectionBlock[]): RespondArguments => {
     replace_original: true,
     // ...botAuthorInfo,
   } as RespondArguments;
+  return response;
+};
+
+const createResponseSayMessage = (
+  threadId: string,
+  blocks: SectionBlock[],
+  text: string,
+):
+  SayArguments => {
+  const response: SayArguments = {
+    thread_ts: threadId,
+    blocks,
+    text,
+  } as SayArguments;
   return response;
 };
 
@@ -170,7 +184,9 @@ const acceptHandler: Handler = async (text, say, message) => {
   const userId = getUserId(message);
   const event = await eventService.acceptInvitationByThreadId(userId, getThreadId(message));
   if (!event) return false;
+  const resp = getAcceptResponseBlock(event.channelId, event.time);
   await slackService.refreshHomeScreen(userId);
+  await say(createResponseSayMessage(getThreadId(message), resp.blocks, resp.text));
   return true;
 };
 
@@ -180,7 +196,9 @@ const declineHandler: Handler = async (text, say, message) => {
   const userId = getUserId(message);
   const event = await eventService.declineInvitationByThreadId(userId, getThreadId(message));
   if (!event) return false;
+  const resp = getDeclineResponseBlock(event.channelId, event.time);
   await slackService.refreshHomeScreen(userId);
+  await say(createResponseSayMessage(getThreadId(message), resp.blocks, resp.text));
   return true;
 };
 
