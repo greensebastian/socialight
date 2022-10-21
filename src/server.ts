@@ -25,6 +25,11 @@ const botAuthorInfo = {
   icon_emoji: ':pizza:',
 };
 
+// eslint-disable-next-line import/prefer-default-export
+export function logTrace(userId: string, action: string, message: string) {
+  console.log(`${userId}: ${action}: ${message}`);
+}
+
 const slack = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -161,6 +166,7 @@ const tickHandler: Handler = async (text) => {
 };
 
 const fallbackHandler: Handler = async (text, say) => {
+  logTrace('?', text, 'reached fallback');
   await say(`I dont understand what you mean by '${text}' :exploding_head:`);
   return true;
 };
@@ -194,12 +200,14 @@ const registerHandlers = async (config: Config) => {
 slack.action('optIn', async ({ ack, body }) => {
   await ack();
   const userId = body.user.id;
+  logTrace(userId, 'optIn', 'Received opt in');
   await planningService.optIn(userId);
 });
 
 slack.action('optOut', async ({ ack, body }) => {
   await ack();
   const userId = body.user.id;
+  logTrace(userId, 'optOut', 'Received opt out');
   await planningService.optOut(userId);
 });
 
@@ -209,6 +217,8 @@ slack.action('acceptInvite', async ({ ack, body }) => {
   const userId = actionBody.user.id;
   const eventId = actionBody.actions[0].value;
 
+  logTrace(userId, 'acceptInvite', `Accepting invite for ${eventId}`);
+
   await eventService.handleUserAction('accept', userId, eventId);
 });
 
@@ -217,6 +227,8 @@ slack.action('declineInvite', async ({ ack, body }) => {
   const actionBody = body as BlockButtonAction;
   const userId = actionBody.user.id;
   const eventId = actionBody.actions[0].value;
+
+  logTrace(userId, 'declineInvite', `Declining invite for ${eventId}`);
 
   await eventService.handleUserAction('decline', userId, eventId);
 });

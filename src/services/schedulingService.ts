@@ -3,6 +3,7 @@ import ConfigRepository from '@repositories/configRepository';
 import SlackRepository from '@repositories/slackRepository';
 import dayjs from 'dayjs';
 import { Job, scheduleJob } from 'node-schedule';
+import { logTrace } from 'server';
 import DateService from './dateService';
 import EventService from './eventService';
 import PlanningService from './planningService';
@@ -67,6 +68,7 @@ class SchedulingService {
       if (event.accepted.length === config.participants && !event.announced) {
         const finalizedEvent = await this.eventService.finalizeAndUpdateEvent(event);
         await this.slackService.sendAnnouncement(finalizedEvent);
+        logTrace(event.id, 'announcing', '');
         for (const userId of event.accepted) {
           if (affectedUsers.has(userId)) affectedUsers.add(userId);
         }
@@ -85,6 +87,8 @@ class SchedulingService {
   private async removeFailedEvents() {
     const failedEvents = await this.planningService.removeFailedEvents();
 
+    logTrace('scheduler', 'removingFailedEvents', JSON.stringify(failedEvents));
+
     await Promise.all(
       failedEvents.map(async (event) => {
         await this.slackService.sendFailedEventNotifications(event);
@@ -96,7 +100,10 @@ class SchedulingService {
     const channels = await this.slackRepository.getChannels();
     for (const channel of channels.poolChannels) {
       const event = await this.planningService.getNextEvent(channel.id!);
-      if (!event) await this.planningService.createEvent(channel.id!);
+      if (!event) {
+        logTrace('scheduled', 'createEvent', `${channel.id}, ${channel.name}`);
+        await this.planningService.createEvent(channel.id!);
+      }
     }
   }
 
@@ -104,6 +111,7 @@ class SchedulingService {
     const events = await this.eventService.getAllEvents();
     for (const event of events) {
       for (const invite of event.invites.filter(SchedulingService.shouldExpire)) {
+        logTrace(invite.userId, 'expiring', 'expiring old invite');
         await this.eventService.handleUserAction('expire', invite.userId, event.id);
       }
     }
@@ -145,6 +153,7 @@ class SchedulingService {
 
     for (const event of events) {
       if (event.accepted.length + event.invites.length < maxParticipants) {
+        logTrace('scheduler', 'failEvent', `Failing event ${event.id} for channel ${event.channelId}`);
         await this.planningService.removeSingleEvent(event);
         await this.slackService.sendFailedEventNotifications(event);
       }
