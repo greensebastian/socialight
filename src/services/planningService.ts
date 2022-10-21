@@ -152,8 +152,8 @@ class PlanningService {
     for (const userId of availableToAdd) {
       const userDetails = await this.slackRepository.getUserDetails(userId);
       if (!userDetails.is_app_user && !userDetails.is_bot && !toInvite.has(userId)) {
-        toInvite.add(userId);
         if (toInvite.size + alreadyAdded >= maxParticipants) break;
+        toInvite.add(userId);
       }
     }
 
