@@ -1,8 +1,10 @@
 import { Event } from '@models/event';
+import SlackRepository from '@repositories/slackRepository';
 import { IStateRepository } from 'core/interface';
 import DateService from './dateService';
 import EventService from './eventService';
 import RandomService from './randomService';
+import SlackService from './slackService';
 
 describe('EventService', () => {
   describe('finalizeAndUpdateEvent', () => {
@@ -24,7 +26,13 @@ describe('EventService', () => {
           return Promise.resolve();
         },
       } as IStateRepository;
-      const sut = new EventService(stateRepositoryMock, new DateService(), new RandomService());
+      const sut = new EventService(
+        stateRepositoryMock,
+        new DateService(),
+        new RandomService(),
+        {} as SlackService,
+        {} as SlackRepository,
+      );
 
       // Act
 
