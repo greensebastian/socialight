@@ -87,8 +87,6 @@ class SchedulingService {
   private async removeFailedEvents() {
     const failedEvents = await this.planningService.removeFailedEvents();
 
-    logTrace('scheduler', 'removingFailedEvents', JSON.stringify(failedEvents));
-
     await Promise.all(
       failedEvents.map(async (event) => {
         await this.slackService.sendFailedEventNotifications(event);
