@@ -62,14 +62,20 @@ class SchedulingService {
   private async announceEvents() {
     const config = await this.configRepository.getConfig();
     const events = await this.eventService.getAllEvents();
+    const affectedUsers = new Set<string>();
     for (const event of events) {
       if (event.accepted.length === config.participants && !event.announced) {
         const finalizedEvent = await this.eventService.finalizeAndUpdateEvent(event);
         await this.slackService.sendAnnouncement(finalizedEvent);
         for (const userId of event.accepted) {
-          await this.slackService.refreshHomeScreen(userId);
+          if (affectedUsers.has(userId)) affectedUsers.add(userId);
         }
       }
+    }
+
+    for (const userId of affectedUsers) {
+      const userEvents = await this.eventService.getUserEvents(userId);
+      await this.slackService.refreshHomeScreen(userId, userEvents);
     }
   }
 
@@ -81,7 +87,7 @@ class SchedulingService {
 
     await Promise.all(
       failedEvents.map(async (event) => {
-        await this.slackService.sendFailedEventNotification(event);
+        await this.slackService.sendFailedEventNotifications(event);
       }),
     );
   }
@@ -98,7 +104,7 @@ class SchedulingService {
     const events = await this.eventService.getAllEvents();
     for (const event of events) {
       for (const invite of event.invites.filter(SchedulingService.shouldExpire)) {
-        await this.eventService.declineInvitation(invite.userId, event.channelId);
+        await this.eventService.handleUserAction('expire', invite.userId, event.id);
       }
     }
   }
@@ -140,7 +146,7 @@ class SchedulingService {
     for (const event of events) {
       if (event.accepted.length + event.invites.length < maxParticipants) {
         await this.planningService.removeSingleEvent(event);
-        await this.slackService.sendFailedEventNotification(event);
+        await this.slackService.sendFailedEventNotifications(event);
       }
     }
   }

@@ -1,5 +1,5 @@
 import {
-  App, BlockButtonAction, KnownEventFromType, SayArguments, SayFn, SectionBlock,
+  App, BlockButtonAction, KnownEventFromType, SayFn,
 } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
 import { SecureContext } from 'tls';
@@ -14,10 +14,6 @@ import DateService from './services/dateService';
 import PlanningService from './services/planningService';
 import RandomService from './services/randomService';
 import setupSecureCtx from './util/certUtil';
-import {
-  getAcceptResponseBlock,
-  getDeclineResponseBlock,
-} from './util/blocks';
 
 // const env = process.env.NODE_ENV || 'development';
 const envPath = '.env';
@@ -46,9 +42,15 @@ const dateService = new DateService();
 
 const randomService = new RandomService();
 
-const eventService = new EventService(stateRepository, dateService, randomService);
+const slackService = new SlackService(slackRepository, stateRepository);
 
-const slackService = new SlackService(slackRepository, stateRepository, eventService);
+const eventService = new EventService(
+  stateRepository,
+  dateService,
+  randomService,
+  slackService,
+  slackRepository,
+);
 
 const planningService = new PlanningService(
   stateRepository,
@@ -68,24 +70,6 @@ const schedulingService = new SchedulingService(
   slackService,
   configRepository,
 );
-
-const getUserId = (message: KnownEventFromType<'message'>) => String((message as any).user);
-
-const getThreadId = (message: KnownEventFromType<'message'>) => String((message as any).thread_ts);
-
-const createResponseSayMessage = (
-  threadId: string,
-  blocks: SectionBlock[],
-  text: string,
-):
-  SayArguments => {
-  const response: SayArguments = {
-    thread_ts: threadId,
-    blocks,
-    text,
-  };
-  return response;
-};
 
 type Handler = (
   text: string,
@@ -169,30 +153,6 @@ const stopHandler: Handler = async (text, say) => {
   return true;
 };
 
-const acceptHandler: Handler = async (text, say, message) => {
-  if (text.toLowerCase() !== 'accept') return false;
-
-  const userId = getUserId(message);
-  const event = await eventService.acceptInvitationByThreadId(userId, getThreadId(message));
-  if (!event) return false;
-  const resp = getAcceptResponseBlock(event.channelId, event.time);
-  await slackService.refreshHomeScreen(userId);
-  await say(createResponseSayMessage(getThreadId(message), resp.blocks, resp.text));
-  return true;
-};
-
-const declineHandler: Handler = async (text, say, message) => {
-  if (text.toLowerCase() !== 'decline') return false;
-
-  const userId = getUserId(message);
-  const event = await eventService.declineInvitationByThreadId(userId, getThreadId(message));
-  if (!event) return false;
-  const resp = getDeclineResponseBlock(event.channelId, event.time);
-  await slackService.refreshHomeScreen(userId);
-  await say(createResponseSayMessage(getThreadId(message), resp.blocks, resp.text));
-  return true;
-};
-
 const tickHandler: Handler = async (text) => {
   if (text.toLowerCase() !== 'tick') return false;
 
@@ -215,7 +175,7 @@ const devHandlers: Handler[] = [
   tickHandler,
 ];
 
-const handlers: Handler[] = [acceptHandler, declineHandler, fallbackHandler];
+const handlers: Handler[] = [fallbackHandler];
 
 const activeHandlers: Handler[] = [];
 
@@ -235,54 +195,13 @@ slack.action('optIn', async ({ ack, body }) => {
   await ack();
   const userId = body.user.id;
   await planningService.optIn(userId);
-  await slackService.refreshHomeScreen(userId);
 });
 
 slack.action('optOut', async ({ ack, body }) => {
   await ack();
   const userId = body.user.id;
   await planningService.optOut(userId);
-  await slackService.refreshHomeScreen(userId);
 });
-
-async function handleUserAction(
-  action: 'accept' | 'decline',
-  userId: string | undefined,
-  eventId: string | undefined,
-): Promise<void> {
-  if (!userId || !eventId) throw new Error('Missing user or event id');
-
-  const invite = (await eventService.getInvite(userId, eventId))?.invite;
-  if (!invite) {
-    console.error(`Could not find invite for user ${userId} and event ${eventId}`);
-    return;
-  }
-
-  const event = action === 'accept'
-    ? await eventService.acceptInvitation(userId, eventId)
-    : await eventService.declineInvitation(userId, eventId);
-  if (!event) {
-    console.error(`Could not find event for user ${userId} and event ${eventId}`);
-    return;
-  }
-
-  const { blocks, text } = action === 'accept'
-    ? getAcceptResponseBlock(event.channelId, event.time)
-    : getDeclineResponseBlock(event.channelId, event.time);
-  const userConversation = await slackRepository.openUserConversation(userId);
-  const userChannelId = userConversation.channel?.id;
-  if (!userChannelId) {
-    console.error(`Could not open conversation with user ${userId} for event ${eventId}`);
-    return;
-  }
-  await slackRepository.updateBlockMessage(
-    userChannelId,
-    blocks,
-    text,
-    invite.threadId!,
-  );
-  await slackService.refreshHomeScreen(userId);
-}
 
 slack.action('acceptInvite', async ({ ack, body }) => {
   await ack();
@@ -290,7 +209,7 @@ slack.action('acceptInvite', async ({ ack, body }) => {
   const userId = actionBody.user.id;
   const eventId = actionBody.actions[0].value;
 
-  await handleUserAction('accept', userId, eventId);
+  await eventService.handleUserAction('accept', userId, eventId);
 });
 
 slack.action('declineInvite', async ({ ack, body }) => {
@@ -299,7 +218,7 @@ slack.action('declineInvite', async ({ ack, body }) => {
   const userId = actionBody.user.id;
   const eventId = actionBody.actions[0].value;
 
-  await handleUserAction('decline', userId, eventId);
+  await eventService.handleUserAction('decline', userId, eventId);
 });
 
 slack.message(async ({ message, say }) => {
@@ -322,7 +241,8 @@ slack.message(async ({ message, say }) => {
 
 slack.event('app_home_opened', async ({ event, logger }) => {
   try {
-    await slackService.refreshHomeScreen(event.user);
+    const userEvents = await eventService.getUserEvents(event.user);
+    await slackService.refreshHomeScreen(event.user, userEvents);
   } catch (error) {
     logger.error(error);
   }

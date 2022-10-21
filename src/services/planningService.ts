@@ -51,6 +51,7 @@ class PlanningService {
     const optedOut = await this.stateRepository.getOptedOut();
     if (!optedOut.includes(userId)) {
       await this.stateRepository.setOptedOut(optedOut.concat(userId));
+      await this.refreshHomeScreen(userId);
     }
     return [];
   }
@@ -63,7 +64,13 @@ class PlanningService {
     const optedOut = await this.stateRepository.getOptedOut();
     if (optedOut.includes(userId)) {
       await this.stateRepository.setOptedOut(optedOut.filter((id) => id !== userId));
+      await this.refreshHomeScreen(userId);
     }
+  }
+
+  private async refreshHomeScreen(userId: string) {
+    const userEvents = await this.eventService.getUserEvents(userId);
+    await this.slackService.refreshHomeScreen(userId, userEvents);
   }
 
   private getNewEventTime(): Date {

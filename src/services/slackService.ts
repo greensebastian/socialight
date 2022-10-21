@@ -12,7 +12,6 @@ import {
   getReminderText,
   getUserMd,
 } from '../util/blocks';
-import EventService from './eventService';
 
 class SlackService {
   private cachedAnnouncementChannelId: string | undefined = undefined;
@@ -20,7 +19,6 @@ class SlackService {
   constructor(
     private slackRepository: SlackRepository,
     private stateRepository: IStateRepository,
-    private eventService: EventService,
   ) {}
 
   async sendInvite(invite: Invite, channelId: string, date: Date, eventId: string) {
@@ -34,7 +32,7 @@ class SlackService {
   }
 
   async sendReminder(invite: Invite, channelId: string, date: Date) {
-    return this.slackRepository.sendMarkdownToUser(invite.userId, `${getReminderText(channelId, date)} ${getUserMd(invite.userId)}>`, invite.threadId);
+    return this.slackRepository.sendMarkdownToUser(invite.userId, `${getReminderText(channelId, date)} ${getUserMd(invite.userId)}`, invite.threadId);
   }
 
   async sendAnnouncement(event: Event) {
@@ -79,9 +77,11 @@ class SlackService {
     await this.slackRepository.inviteToChannel(userIds, await this.announcementChannelId());
   }
 
-  async sendFailedEventNotification(event: Event) {
+  async sendFailedEventNotifications(event: Event) {
     const { blocks, text } = getEventCancelledBlock(event.channelId, event.time);
-    await this.slackRepository.sendBlocks(event.channelId, blocks, text);
+    for (const invite of event.invites) {
+      await this.slackRepository.sendBlocksToUser(invite.userId, blocks, text, invite.threadId);
+    }
   }
 
   async sendOptedOut(userId: string) {
@@ -94,9 +94,8 @@ class SlackService {
     await this.slackRepository.sendBlocksToUser(userId, blocks, text);
   }
 
-  async refreshHomeScreen(userId: string) {
+  async refreshHomeScreen(userId: string, events: Event[]) {
     const userOptedOut = (await this.stateRepository.getOptedOut()).includes(userId);
-    const events = await this.eventService.getUserEvents(userId);
 
     const accepted = events.filter((ev) => EventUtil.hasAccepted(ev, userId));
     const declined = events.filter((ev) => EventUtil.hasDeclined(ev, userId));

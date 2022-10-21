@@ -175,6 +175,27 @@ export const getDeclineResponseBlock = (channelId: string, date: Date) => ({
   text: getDeclineResponseText(channelId, date),
 });
 
+const getExpireResponseText = (channelId: string, date: Date) =>
+  `Your invite for pizza with ${getChannelMd(channelId)} on ${getDateMd(
+    date,
+  )} has *expired*. Hope to see you some other time!`;
+export const getExpireResponseBlock = (channelId: string, date: Date) => ({
+  blocks: [
+    {
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: `Your invite for pizza with ${getChannelMd(
+            channelId,
+          )} on ${getDateMd(date)} has *expired*. Hope to see you some other time!`,
+        },
+      ],
+    } as SectionBlock,
+  ],
+  text: getExpireResponseText(channelId, date),
+});
+
 const getEventCancelledText = (channelId: string, date: Date) =>
   `The event planned for ${getChannelMd(channelId)} on ${getDateMd(
     date,

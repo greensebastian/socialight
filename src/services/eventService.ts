@@ -3,12 +3,26 @@ import DateService from '@services/dateService';
 import { Guid } from 'guid-typescript';
 import { IStateRepository } from 'core/interface';
 import RandomService from './randomService';
+import { getAcceptResponseBlock, getDeclineResponseBlock, getExpireResponseBlock } from '../util/blocks';
+import SlackService from './slackService';
+import SlackRepository from '../repositories/slackRepository';
+
+function getResponseBlock(action: 'accept' | 'decline' | 'expire', channelId: string, date: Date) {
+  switch (action) {
+    case 'accept': return getAcceptResponseBlock(channelId, date);
+    case 'decline': return getDeclineResponseBlock(channelId, date);
+    case 'expire': return getExpireResponseBlock(channelId, date);
+    default: throw new Error(`Unknown user action: "${action}"`);
+  }
+}
 
 class EventService {
   constructor(
     private stateRepository: IStateRepository,
     private dateService: DateService,
     private randomService: RandomService,
+    private slackService: SlackService,
+    private slackRepository: SlackRepository,
   ) {}
 
   /**
@@ -27,14 +41,9 @@ class EventService {
    * @param eventId
    * @returns array of all events
    */
-  async getEvent(eventId: string): Promise<Event | undefined> {
+  private async getEvent(eventId: string): Promise<Event | undefined> {
     const events = await this.stateRepository.getEvents();
     return events.find((ev) => ev.id === eventId);
-  }
-
-  async getEventByThreadId(threadId: string): Promise<Event | undefined> {
-    const events = await this.stateRepository.getEvents();
-    return events.find((ev) => ev.invites.find((invite) => invite.threadId === threadId));
   }
 
   /**
@@ -74,26 +83,12 @@ class EventService {
     return event;
   }
 
-  async acceptInvitationByThreadId(
-    userId: string,
-    threadId: string,
-  ): Promise<Event | undefined> {
-    const event = await this.getEventByThreadId(threadId);
-    if (!event) return undefined;
-
-    const userInvite = event.invites.find((invite) => invite.userId === userId);
-    if (userInvite) {
-      return this.acceptEvent(event, userId);
-    }
-    return undefined;
-  }
-
   /**
    * Accepts the first event the user is invited to
    * @param userId Slack ID of user to accept
    * @returns true if an invitation was successfully accepted
    */
-  async acceptInvitation(
+  private async acceptInvitation(
     userId: string,
     eventId: string,
   ): Promise<Event | undefined> {
@@ -104,7 +99,7 @@ class EventService {
     return undefined;
   }
 
-  async getInvite(userId: string, eventId: string):
+  private async getInvite(userId: string, eventId: string):
     Promise<{invite: Invite, event: Event} | undefined> {
     const event = await this.getEvent(eventId);
     if (!event) return undefined;
@@ -118,26 +113,12 @@ class EventService {
     };
   }
 
-  async declineInvitationByThreadId(
-    userId: string,
-    threadId: string,
-  ): Promise<Event | undefined> {
-    const event = await this.getEventByThreadId(threadId);
-    if (!event) return undefined;
-
-    const userInvite = event.invites.find((invite) => invite.userId === userId);
-    if (userInvite) {
-      return this.declineEvent(event, userId);
-    }
-    return undefined;
-  }
-
   /**
    * Declines the first event the user is invited to
    * @param userId Slack ID of user to decline
    * @returns true if an invitation was successfully declined
    */
-  async declineInvitation(
+  private async declineInvitation(
     userId: string,
     eventId: string,
   ): Promise<Event | undefined> {
@@ -188,6 +169,44 @@ class EventService {
 
     await this.updateEvent(updatedEvent);
     return updatedEvent;
+  }
+
+  async handleUserAction(
+    action: 'accept' | 'decline' | 'expire',
+    userId: string | undefined,
+    eventId: string | undefined,
+  ): Promise<void> {
+    if (!userId || !eventId) throw new Error('Missing user or event id');
+
+    const invite = (await this.getInvite(userId, eventId))?.invite;
+    if (!invite) {
+      console.error(`Could not find invite for user ${userId} and event ${eventId}`);
+      return;
+    }
+
+    const event = action === 'accept'
+      ? await this.acceptInvitation(userId, eventId)
+      : await this.declineInvitation(userId, eventId);
+    if (!event) {
+      console.error(`Could not find event for user ${userId} and event ${eventId}`);
+      return;
+    }
+
+    const { blocks, text } = getResponseBlock(action, event.channelId, event.time);
+    const userConversation = await this.slackRepository.openUserConversation(userId);
+    const userChannelId = userConversation.channel?.id;
+    if (!userChannelId) {
+      console.error(`Could not open conversation with user ${userId} for event ${eventId}`);
+      return;
+    }
+    await this.slackRepository.updateBlockMessage(
+      userChannelId,
+      blocks,
+      text,
+      invite.threadId!,
+    );
+    const events = await this.getUserEvents(userId);
+    await this.slackService.refreshHomeScreen(userId, events);
   }
 
   private static async createInvites(users: string[]): Promise<Invite[]> {
