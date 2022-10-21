@@ -134,7 +134,7 @@ class EventService {
 
   async inviteToEvent(event: Event, userIds: string[]) {
     const updatedEvent = EventUtil.invite(event, userIds);
-    await this.updateEvent(updatedEvent);
+    return this.updateEvent(updatedEvent);
   }
 
   private async acceptEvent(event: Event, userId: string): Promise<Event> {
@@ -149,13 +149,14 @@ class EventService {
     return newEvent;
   }
 
-  async updateEvent(newEvent: Event) {
+  async updateEvent(newEvent: Event): Promise<Event | undefined> {
     const events = await this.getAllEvents();
-    if (!events.find((ev) => ev.id === newEvent.id)) return;
+    if (!events.find((ev) => ev.id === newEvent.id)) return undefined;
 
     const updatedEvents = events.filter((event) => event.id !== newEvent.id);
     updatedEvents.push(newEvent);
     await this.stateRepository.setEvents(updatedEvents);
+    return newEvent;
   }
 
   async finalizeAndUpdateEvent(event: Event) {

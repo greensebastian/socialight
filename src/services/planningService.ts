@@ -125,7 +125,7 @@ class PlanningService {
 
   async fillInvites(event: Event) {
     const userIds = await this.getUserIdsToInvite(event.channelId, event);
-    await this.eventService.inviteToEvent(event, userIds);
+    return this.eventService.inviteToEvent(event, userIds);
   }
 
   private async getUserIdsToInvite(
@@ -146,12 +146,14 @@ class PlanningService {
 
     this.randomService.shuffleArray(availableToAdd);
 
+    const alreadyAdded = (event?.invites.length || 0) + (event?.accepted.length || 0);
+
     const toInvite = new Set<string>();
     for (const userId of availableToAdd) {
       const userDetails = await this.slackRepository.getUserDetails(userId);
       if (!userDetails.is_app_user && !userDetails.is_bot && !toInvite.has(userId)) {
         toInvite.add(userId);
-        if (toInvite.size >= maxParticipants) break;
+        if (toInvite.size + alreadyAdded >= maxParticipants) break;
       }
     }
 
