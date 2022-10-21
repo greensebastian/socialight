@@ -156,8 +156,8 @@ class SchedulingService {
     if (config.development) return true;
 
     const now = dayjs(this.dateService.now());
-    const start = now.startOf('day').add(7, 'hour');
-    const end = now.startOf('day').add(20, 'hour');
+    const start = now.startOf('day').add(config.startOfDay, 'hour');
+    const end = now.startOf('day').add(config.endOfDay, 'hour');
     return now.isAfter(start) && now.isBefore(end);
   }
 

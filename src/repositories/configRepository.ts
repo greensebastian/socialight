@@ -9,6 +9,8 @@ class ConfigRepository {
       announcementsChannel: process.env.ANNOUNCEMENTS_CHANNEL!,
       participants: Number(process.env.PARTICIPANTS),
       development: process.env.DEVELOPMENT === 'true',
+      startOfDay: Number(process.env.START_OF_DAY) ?? 6,
+      endOfDay: Number(process.env.END_OF_DAY) ?? 20,
     };
   }
 
