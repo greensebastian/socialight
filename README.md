@@ -6,43 +6,27 @@ It runs standalone on any server capable of hosting node apps, and will automati
 
 # Usage
 
-Communication with the bot happens through direct messages with the bot user. It listens to a couple of predefined commands, and will use the user id to determine the context of the command. As a rule of thumb, the bot should respond to **all** commands one way or another to let the user know the command was at the very least received.
-
-## Commands
-
-If an unsupported command is sent to the bot, it will list the available commands.
-
-![commands](https://imgur.com/VMqpvCL.png)
+Communication with the bot happens through direct messaging and block actions. In production mode it only has a fallback "i don't know what that means" response to all free text, but in development mode there are more commands. As a rule of thumb, the bot should respond to **all** commands one way or another to let the user know the command was at the very least received.
 
 ## Invitations
 
 When a person is invited to an event, they will receive a dm from the bot with information on what channel the invite originated from and how to respond.
 
-![invitations](https://imgur.com/vTXHGuh.png)
-
 ## Accepting and declining
 
-After being invited to an event, a user can accept or decline events one at a time through the accept and decline commands. These commands will act on the **NEXT** event the user has been invited to and has not yet responded to. You can't change your response to an invite after sending accept or decline. If you have two pending invites, you should respond to them sequentially in chronological order.
-
-![accept and decline](https://imgur.com/0fJQKYv.png)
+After being invited to an event, a user can accept or decline events one at a time through the accept and decline commands. You can't change your response to an invite after sending accept or decline.
 
 ## Listing events
 
-Use this command to list all your future accepted, declined, or pending events.
-
-![listing events](https://imgur.com/WDp2bF4.png)
+A list of all events the user is involved in is available on the home page of the app.
 
 ## Announcements
 
 When an event has enough accepted invites to match the configured number of participants, the event is announced to the announcement channel as well as individually to all users who accepted.
 
-![announcement](https://imgur.com/HrYGi6w.png)
-
 ## Opting in and out
 
-Users can opt in and out if they dont want to partake in the events. Opting out will decline all pending invitations, but not ones that have already been accepted.
-
-![opting in and out](https://imgur.com/il66MgG.png)
+Users can opt in and out from the app home page if they dont want to partake in the events. Opting out has no effect on existing invites.
 
 # Setup
 
@@ -94,6 +78,16 @@ Name of channel where the bot announces shared information, such as successfully
 * PARTICIPANTS
 
 Number of participants per event.
+
+### Invites
+
+* START_OF_DAY
+
+The bot will not send direct messages before this time.
+
+* END_OF_DAY
+
+The bot will not send direct messages after this time.
 
 ### TLS
 
