@@ -19,7 +19,7 @@ const getUsersMd = (userIds: string[]): string => {
 const getDateMd = (date: Date) => `*${dateFormat(date)}*`;
 
 export const getInvitationText = (channelId: string, date: Date) =>
-  `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)} :pizza: \n\nRespond by writing *accept* or *decline* in this thread!`;
+  `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)} :pizza: \n\nRespond by accepting or declining!`;
 
 export const getInvitationTextBlock = (channelId: string, date: Date) => ({
   blocks: [

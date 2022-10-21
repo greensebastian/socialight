@@ -122,11 +122,11 @@ class SchedulingService {
           await this.eventService.updateEvent(event);
         }
         if (await this.shouldSendInvite(invite)) {
-          const threadId = await this
-            .slackService.sendInvite(invite, event.channelId, event.time);
+          const inviteMessageInfo = await this
+            .slackService.sendInvite(invite, event.channelId, event.time, event.id);
           invite.inviteSent = now;
           invite.reminderSent = now;
-          invite.threadId = threadId;
+          invite.threadId = inviteMessageInfo.ts;
           await this.eventService.updateEvent(event);
         }
       }

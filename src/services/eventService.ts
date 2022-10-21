@@ -97,14 +97,25 @@ class EventService {
     userId: string,
     eventId: string,
   ): Promise<Event | undefined> {
+    const data = await this.getInvite(userId, eventId);
+    if (data) {
+      return this.acceptEvent(data.event, userId);
+    }
+    return undefined;
+  }
+
+  async getInvite(userId: string, eventId: string):
+    Promise<{invite: Invite, event: Event} | undefined> {
     const event = await this.getEvent(eventId);
     if (!event) return undefined;
 
-    const userInvite = event.invites.find((invite) => invite.userId === userId);
-    if (userInvite) {
-      return this.acceptEvent(event, userId);
-    }
-    return undefined;
+    const invite = event.invites.find((inv) => inv.userId === userId);
+    if (!invite) return undefined;
+
+    return {
+      event,
+      invite,
+    };
   }
 
   async declineInvitationByThreadId(

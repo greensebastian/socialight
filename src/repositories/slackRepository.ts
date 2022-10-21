@@ -2,7 +2,7 @@ import { App, Block } from '@slack/bolt';
 import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse';
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
-import { ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
+import { ChatUpdateArguments, ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
 
 export type AuthorInfo = {
   username: string;
@@ -129,7 +129,7 @@ class SlackRepository {
     return userDetails.concat(cachedUserIds.map((id) => this.cachedUsers.get(id)!));
   }
 
-  private async openUserConversation(userId: string): Promise<ConversationsOpenResponse> {
+  async openUserConversation(userId: string): Promise<ConversationsOpenResponse> {
     return this.slack.client.conversations.open({ users: userId });
   }
 
@@ -154,9 +154,29 @@ class SlackRepository {
     return this.sendMarkdown(conversation.channel!.id!, markdown, threadId);
   }
 
-  async sendBlocksToUser(userId: string, blocks: KnownBlock[], text: string) {
+  async updateBlockMessage(
+    channelId: string,
+    blocks: KnownBlock[],
+    text: string,
+    threadId: string,
+  ) {
+    const options: ChatUpdateArguments = {
+      channel: channelId,
+      blocks,
+      text,
+      ts: threadId,
+    };
+    await this.slack.client.chat.update(options);
+  }
+
+  async sendBlocksToUser(
+    userId: string,
+    blocks: KnownBlock[],
+    text: string,
+    threadId: string | undefined = undefined,
+  ) {
     const conversation = await this.openUserConversation(userId);
-    await this.sendBlocks(conversation.channel!.id!, blocks, text);
+    return this.sendBlocks(conversation.channel!.id!, blocks, text, threadId);
   }
 
   public async sendMarkdown(channelId: string, markdown: string, threadId: string) {
@@ -180,11 +200,17 @@ class SlackRepository {
     return resp.ts;
   }
 
-  async sendBlocks(channelId: string, blocks: KnownBlock[], text: string) {
-    await this.slack.client.chat.postMessage({
+  sendBlocks(
+    channelId: string,
+    blocks: KnownBlock[],
+    text: string,
+    threadId: string | undefined = undefined,
+  ) {
+    return this.slack.client.chat.postMessage({
       channel: channelId,
       blocks,
       text,
+      thread_ts: threadId,
       // ...this.botAuthorInfo,
     });
   }

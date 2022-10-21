@@ -6,7 +6,7 @@ import {
   getAnnouncementBlock,
   getEventCancelledBlock,
   getHomeBlock,
-  getInvitationText,
+  getInvitationBlock,
   getOptedInBlock,
   getOptedOutBlock,
   getReminderText,
@@ -23,9 +23,14 @@ class SlackService {
     private eventService: EventService,
   ) {}
 
-  async sendInvite(invite: Invite, channelId: string, date: Date) {
-    return this.slackRepository
-      .sendMarkdownToUser(invite.userId, getInvitationText(channelId, date), invite.threadId);
+  async sendInvite(invite: Invite, channelId: string, date: Date, eventId: string) {
+    const message = getInvitationBlock(channelId, date, eventId);
+    return this.slackRepository.sendBlocksToUser(
+      invite.userId,
+      message.blocks,
+      message.text,
+      invite.threadId,
+    );
   }
 
   async sendReminder(invite: Invite, channelId: string, date: Date) {

@@ -1,5 +1,5 @@
 import {
-  App, BlockButtonAction, KnownEventFromType, RespondArguments, SayArguments, SayFn, SectionBlock,
+  App, BlockButtonAction, KnownEventFromType, SayArguments, SayFn, SectionBlock,
 } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
 import { SecureContext } from 'tls';
@@ -73,15 +73,6 @@ const getUserId = (message: KnownEventFromType<'message'>) => String((message as
 
 const getThreadId = (message: KnownEventFromType<'message'>) => String((message as any).thread_ts);
 
-const createResponseMessage = (blocks: SectionBlock[]): RespondArguments => {
-  const response: RespondArguments = {
-    blocks,
-    replace_original: true,
-    // ...botAuthorInfo,
-  } as RespondArguments;
-  return response;
-};
-
 const createResponseSayMessage = (
   threadId: string,
   blocks: SectionBlock[],
@@ -92,7 +83,7 @@ const createResponseSayMessage = (
     thread_ts: threadId,
     blocks,
     text,
-  } as SayArguments;
+  };
   return response;
 };
 
@@ -254,44 +245,69 @@ slack.action('optOut', async ({ ack, body }) => {
   await slackService.refreshHomeScreen(userId);
 });
 
-slack.action('acceptInvite', async ({ ack, body, respond }) => {
+async function handleUserAction(
+  action: 'accept' | 'decline',
+  userId: string | undefined,
+  eventId: string | undefined,
+): Promise<void> {
+  if (!userId || !eventId) throw new Error('Missing user or event id');
+
+  const invite = (await eventService.getInvite(userId, eventId))?.invite;
+  if (!invite) {
+    console.error(`Could not find invite for user ${userId} and event ${eventId}`);
+    return;
+  }
+
+  const event = action === 'accept'
+    ? await eventService.acceptInvitation(userId, eventId)
+    : await eventService.declineInvitation(userId, eventId);
+  if (!event) {
+    console.error(`Could not find event for user ${userId} and event ${eventId}`);
+    return;
+  }
+
+  const { blocks, text } = action === 'accept'
+    ? getAcceptResponseBlock(event.channelId, event.time)
+    : getDeclineResponseBlock(event.channelId, event.time);
+  const userConversation = await slackRepository.openUserConversation(userId);
+  const userChannelId = userConversation.channel?.id;
+  if (!userChannelId) {
+    console.error(`Could not open conversation with user ${userId} for event ${eventId}`);
+    return;
+  }
+  await slackRepository.updateBlockMessage(
+    userChannelId,
+    blocks,
+    text,
+    invite.threadId!,
+  );
+  await slackService.refreshHomeScreen(userId);
+}
+
+slack.action('acceptInvite', async ({ ack, body }) => {
   await ack();
   const actionBody = body as BlockButtonAction;
   const userId = actionBody.user.id;
   const eventId = actionBody.actions[0].value;
 
-  if (!userId || !eventId) throw new Error('Missing user or event id');
-
-  const event = await eventService.acceptInvitation(userId, eventId);
-  if (!event) return;
-  const { blocks } = getAcceptResponseBlock(event.channelId, event.time);
-  await slackService.refreshHomeScreen(userId);
-
-  if (respond) {
-    await respond(createResponseMessage(blocks));
-  }
+  await handleUserAction('accept', userId, eventId);
 });
 
-slack.action('declineInvite', async ({ ack, body, respond }) => {
+slack.action('declineInvite', async ({ ack, body }) => {
   await ack();
   const actionBody = body as BlockButtonAction;
   const userId = actionBody.user.id;
   const eventId = actionBody.actions[0].value;
 
-  if (!userId || !eventId) throw new Error('Missing user or event id');
-
-  const event = await eventService.declineInvitation(userId, eventId);
-  if (!event) return;
-  const { blocks } = getDeclineResponseBlock(event.channelId, event.time);
-  await slackService.refreshHomeScreen(userId);
-
-  if (respond) {
-    await respond(createResponseMessage(blocks));
-  }
+  await handleUserAction('decline', userId, eventId);
 });
 
 slack.message(async ({ message, say }) => {
   if (message.channel_type !== 'im') return;
+
+  // Catch "changed" messages of the bot changing it's own message
+  if ((message as any).message?.subtype === 'bot_message') return;
+  if ((message as any).message?.bot_id) return;
 
   // TODO handle event retries from Slack?
 
