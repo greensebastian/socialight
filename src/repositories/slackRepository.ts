@@ -41,23 +41,32 @@ class SlackRepository {
       moreToFetch = !!cursor;
     }
 
-    const poolChannelNames = config.poolChannels.split(',');
-    const poolChannels = channels.filter((channel) => poolChannelNames.includes(channel.name!));
-    const announcementsChannel = channels.find(
-      (channel) => channel.name === config.announcementsChannel,
-    );
+    const participatingChannels = [];
+    for (const channelNamePair of config.channels) {
+      const poolChannel = channels.find((channel) => channelNamePair.poolChannel === channel.name!);
+      const announcementsChannel = channels
+        .find((channel) => channelNamePair.poolChannel === channel.name!);
 
-    for (const channel of poolChannels) {
-      this.cachedChannels.set(channel.id!, channel);
+      if (poolChannel && announcementsChannel) {
+        participatingChannels.push({
+          poolChannel,
+          announcementsChannel,
+        });
+      }
     }
 
-    return { poolChannels, announcementsChannel };
+    for (const channelPair of participatingChannels) {
+      this.cachedChannels.set(channelPair.poolChannel.id!, channelPair.poolChannel);
+    }
+
+    return participatingChannels;
   }
 
   async getChannelByName(name: string) {
     const channelName = name.toLowerCase();
     const config = await this.configProvider.getConfig();
-    if (!config.poolChannels.includes(channelName)) return undefined;
+    const poolChannelNames = config.channels.map((channelPair) => channelPair.poolChannel);
+    if (!poolChannelNames.includes(channelName)) return undefined;
 
     const cachedChannel = Array.from(this.cachedChannels.values()).find(
       (channel) => channel.name?.toLowerCase() === channelName,
@@ -67,7 +76,8 @@ class SlackRepository {
     }
 
     const channels = await this.getChannels();
-    return channels.poolChannels.find((channel) => channel.name?.toLowerCase() === channelName);
+    const poolChannels = channels.map((channelPair) => channelPair.poolChannel);
+    return poolChannels.find((channel) => channel.name?.toLowerCase() === channelName);
   }
 
   async getChannelById(channelId: string): Promise<Channel | undefined> {
