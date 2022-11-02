@@ -3,6 +3,7 @@ import { IStateRepository } from 'core/interface';
 import {
   existsSync, mkdirSync, readFileSync, writeFileSync,
 } from 'fs';
+import { logTrace } from 'server';
 
 const KEY_EVENTS = 'EVENTS';
 const KEY_OPT_OUT = 'OPT_OUT';
@@ -46,7 +47,7 @@ class FileRepository implements IStateRepository {
   private async get<T>(key: string): Promise<T | undefined> {
     const fileName = file(key);
     if (!existsSync(fileName)) {
-      console.log(`No file named ${fileName} exists.`);
+      logTrace('fileRepository', 'get', `No file named ${fileName} exists.`);
       return Promise.resolve(undefined);
     }
     const val = readFileSync(file(key), 'utf-8');

@@ -27,7 +27,7 @@ const botAuthorInfo = {
 
 // eslint-disable-next-line import/prefer-default-export
 export function logTrace(userId: string, action: string, message: string) {
-  console.log(`${userId}: ${action}: ${message}`);
+  console.log(`[${new Date().toISOString()}] ${userId}: ${action}: ${message}`);
 }
 
 const slack = new App({
@@ -153,7 +153,7 @@ const stopHandler: Handler = async (text, say) => {
   await say('Stopping app...');
   await slack.stop();
   await schedulingService.stop();
-  console.log('App stopped.');
+  logTrace('stopHandler', 'stopReceived', 'App stopped.');
   return true;
 };
 
@@ -243,7 +243,7 @@ slack.message(async ({ message, say }) => {
 
   const text = String((message as any).text);
 
-  console.log(`Received command: '${text}'`);
+  logTrace('server', 'commandHandler', `Received command: '${text}'`);
 
   for (const handler of activeHandlers) {
     if (await handler(text, say, message)) return;
@@ -266,9 +266,9 @@ slack.event('app_home_opened', async ({ event, logger }) => {
   const getCtx = setupSecureCtx();
 
   if (getCtx()) {
-    console.log('TLS settings were available during startup!');
+    logTrace('startup', 'tlsPrep', 'TLS settings were available during startup!');
   } else {
-    console.warn('TLS was not found on startup!');
+    logTrace('startup', 'tlsPrep', 'TLS was not found on startup!');
   }
 
   await slack.start(port, {
@@ -282,5 +282,5 @@ slack.event('app_home_opened', async ({ event, logger }) => {
   const config = await configRepository.getConfig();
   await registerHandlers(config);
 
-  console.log('⚡️ Bolt app is running!');
+  logTrace('startup', 'started', '⚡️ Bolt app is running!');
 })();

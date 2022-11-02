@@ -115,3 +115,7 @@ state
 
 # Log
 log.txt
+
+# App config
+appconfig.*.json
+appconfig.json

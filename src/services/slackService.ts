@@ -15,7 +15,7 @@ import {
 } from '../util/blocks';
 
 class SlackService {
-  private announcementsChannelsIdCache = new Map<string, string>();
+  private announcementChannelIdsByPoolChannelIdsCache = new Map<string, string>();
 
   constructor(
     private slackRepository: SlackRepository,
@@ -53,46 +53,45 @@ class SlackService {
       await this.sendAnnouncementToUser(userId, blocks, text);
     }
 
-    const announcementsChannelName =
-      this.configRepository.getAnnouncementsChannelForPoolChannel(event.channelId);
     // Don't invite for now, requires "Channels/Manage permissions"
     // await this.ensureInvitedToAnnouncementChannel(userIds);
-    await this.sendAnnouncementToAnnouncementChannel(announcementsChannelName, blocks, text);
+    await this.sendAnnouncementToAnnouncementChannel(event.channelId, blocks, text);
   }
 
   private async sendAnnouncementToAnnouncementChannel(
-    announcementsChannelName: string,
+    poolChannelId: string,
     blocks: SectionBlock[],
     text: string,
   ) {
+    const announcementChannel = await this.announcementChannelId(poolChannelId);
     await this.slackRepository
-      .sendBlocks(await this.announcementChannelIdForName(announcementsChannelName), blocks, text);
+      .sendBlocks(announcementChannel, blocks, text);
   }
 
   private async sendAnnouncementToUser(userId: string, blocks: SectionBlock[], text: string) {
     await this.slackRepository.sendBlocksToUser(userId, blocks, text);
   }
 
-  private async announcementChannelIdForName(channelName: string) {
-    if (!this.announcementsChannelsIdCache.has(channelName)) {
-      const channels = await this.slackRepository.getChannels();
-      const announcementsChannel =
-        channels.find((channelPair) => channelPair.announcementsChannel.name === channelName)
-          ?.announcementsChannel;
+  private async announcementChannelId(poolChannelId: string) {
+    if (!this.announcementChannelIdsByPoolChannelIdsCache.has(poolChannelId)) {
+      const channelPairs = await this.slackRepository.getChannels();
+      const channelPair = channelPairs.find((pair) => pair.poolChannel.id === poolChannelId);
+      const announcementsChannel = channelPair?.announcementsChannel;
       if (announcementsChannel?.id) {
-        this.announcementsChannelsIdCache.set(channelName, announcementsChannel.id);
+        this.announcementChannelIdsByPoolChannelIdsCache
+          .set(poolChannelId, announcementsChannel.id);
       }
     }
 
-    return this.announcementsChannelsIdCache.get(channelName)!;
+    return this.announcementChannelIdsByPoolChannelIdsCache.get(poolChannelId)!;
   }
 
   private async ensureInvitedToAnnouncementChannel(
-    announcementsChannelName: string,
+    poolChannelId: string,
     userIds: string[],
   ) {
     await this.slackRepository
-      .inviteToChannel(userIds, await this.announcementChannelIdForName(announcementsChannelName));
+      .inviteToChannel(userIds, await this.announcementChannelId(poolChannelId));
   }
 
   async sendFailedEventNotifications(event: Event) {

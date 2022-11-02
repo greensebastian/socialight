@@ -45,7 +45,7 @@ class SlackRepository {
     for (const channelNamePair of config.channels) {
       const poolChannel = channels.find((channel) => channelNamePair.poolChannel === channel.name!);
       const announcementsChannel = channels
-        .find((channel) => channelNamePair.poolChannel === channel.name!);
+        .find((channel) => channelNamePair.announcementsChannel === channel.name!);
 
       if (poolChannel && announcementsChannel) {
         participatingChannels.push({
@@ -57,6 +57,8 @@ class SlackRepository {
 
     for (const channelPair of participatingChannels) {
       this.cachedChannels.set(channelPair.poolChannel.id!, channelPair.poolChannel);
+      this.cachedChannels
+        .set(channelPair.announcementsChannel.id!, channelPair.announcementsChannel);
     }
 
     return participatingChannels;
