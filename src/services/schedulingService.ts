@@ -96,11 +96,11 @@ class SchedulingService {
 
   private async planNewEvents() {
     const channels = await this.slackRepository.getChannels();
-    for (const channel of channels.poolChannels) {
-      const event = await this.planningService.getNextEvent(channel.id!);
+    for (const channelPair of channels) {
+      const event = await this.planningService.getNextEvent(channelPair.poolChannel.id!);
       if (!event) {
-        logTrace('scheduled', 'createEvent', `${channel.id}, ${channel.name}`);
-        await this.planningService.createEvent(channel.id!);
+        logTrace('scheduled', 'createEvent', `${channelPair.poolChannel.id}, ${channelPair.poolChannel.name}`);
+        await this.planningService.createEvent(channelPair.poolChannel.id!);
       }
     }
   }

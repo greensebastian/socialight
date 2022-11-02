@@ -47,7 +47,7 @@ const dateService = new DateService();
 
 const randomService = new RandomService();
 
-const slackService = new SlackService(slackRepository, stateRepository);
+const slackService = new SlackService(slackRepository, stateRepository, configRepository);
 
 const eventService = new EventService(
   stateRepository,
@@ -86,14 +86,13 @@ const channelsHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'channels') return false;
 
   const channels = await slackRepository.getChannels();
-  const announcementText = channels.announcementsChannel
-    ? `#${channels.announcementsChannel.name} to announce to`
-    : 'no announcement channel';
+  const channelPairText = channels.map((channelPair) =>
+    `[#${channelPair.poolChannel.name}] -> [#${channelPair.announcementsChannel.name}]`);
+
   await say(
-    `Found ${announcementText} and channels ${channels.poolChannels
-      .map((ch) => `#${ch.name}`)
-      .join(', ')} to pick participants from!`,
+    `Found channel pairs, [pool] -> [announcements]:\n${channelPairText.join('\n')}`,
   );
+
   return true;
 };
 
@@ -101,7 +100,7 @@ const userHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'users') return false;
 
   const channels = await slackRepository.getChannels();
-  const firstChannel = channels.poolChannels[0];
+  const firstChannel = channels[0].poolChannel;
   const users = await slackRepository.getUsersInChannel(firstChannel.id!);
   const userDetails = await slackRepository.getUsersDetails(users);
 
@@ -116,7 +115,7 @@ const userHandler: Handler = async (text, say) => {
 const planHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'plan') return false;
 
-  const channel = (await slackRepository.getChannels()).poolChannels[0];
+  const channel = (await slackRepository.getChannels())[0].poolChannel;
   const event = await planningService.createEvent(channel.id!);
 
   const invitedUserIds = event!.invites.map((inv) => inv.userId);

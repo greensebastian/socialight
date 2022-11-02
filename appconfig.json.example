@@ -1,0 +1,12 @@
+{
+  "channels": [
+      {
+          "poolChannel": "<channel-name>",
+          "announcementsChannel": "<channel-name>"
+      },
+      {
+          "poolChannel": "<channel-name>",
+          "announcementsChannel": "<channel-name>"
+      }
+  ]
+}
