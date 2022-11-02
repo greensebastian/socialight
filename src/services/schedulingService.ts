@@ -31,7 +31,7 @@ class SchedulingService {
     if (this.running) return Promise.resolve();
 
     this.job = scheduleJob(EVERY_5_MIN, async (fireDate) => {
-      console.log(`Running scheduler... ${(fireDate ?? this.dateService.now()).toISOString()}`);
+      logTrace('scheduled', 'running', `Running scheduler... ${(fireDate ?? this.dateService.now()).toISOString()}`);
 
       // Order of operations is important here
       await this.announceEvents();
@@ -68,7 +68,7 @@ class SchedulingService {
       if (event.accepted.length === config.participants && !event.announced) {
         const finalizedEvent = await this.eventService.finalizeAndUpdateEvent(event);
         await this.slackService.sendAnnouncement(finalizedEvent);
-        logTrace(event.id, 'announcing', '');
+        logTrace(event.id, 'announcing', `${event.channelId}, ${event.time.toISOString()}, ${event.accepted.join(', ')}`);
         for (const userId of event.accepted) {
           if (affectedUsers.has(userId)) affectedUsers.add(userId);
         }
