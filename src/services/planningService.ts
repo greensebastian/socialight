@@ -80,10 +80,11 @@ class PlanningService {
     // Schedule two mondays away at the earliest
     const nextSunday = now.add(7 - now.day(), 'day');
     const mondayTwoWeeksOut = nextSunday.add(8, 'day');
+    const mondayThreeWeeksOut = mondayTwoWeeksOut.add(7, 'day');
 
     // Add 0-3 days to randomize monday through thursday
     const daysToAdd = this.randomService.getInt(4);
-    const dayOfMeeting = mondayTwoWeeksOut.add(daysToAdd, 'day');
+    const dayOfMeeting = mondayThreeWeeksOut.add(daysToAdd, 'day');
     // Normalize to 17:00
     return dayOfMeeting.startOf('day').add(17, 'hour').toDate();
   }
