@@ -3,6 +3,7 @@ import { Channel } from '@slack/web-api/dist/response/ConversationsListResponse'
 import { User } from '@slack/web-api/dist/response/UsersInfoResponse';
 import ConfigRepository from '@repositories/configRepository';
 import { ChatUpdateArguments, ConversationsOpenResponse, KnownBlock } from '@slack/web-api';
+import { logTrace } from 'server';
 
 export type AuthorInfo = {
   username: string;
@@ -29,6 +30,7 @@ class SlackRepository {
     let cursor: string | undefined;
 
     while (moreToFetch) {
+      logTrace('slackRepository', 'getChannels', 'getting new batch of available channels');
       const conversationsResponse = await this.slack.client.conversations.list({
         types: 'public_channel,private_channel',
         exclude_archived: true,
@@ -100,6 +102,7 @@ class SlackRepository {
     let cursor: string | undefined;
 
     while (moreToFetch) {
+      logTrace('slackRepository', 'getChannelMemberIds', `listing members in channel ${channelId}`);
       const usersResponse = await this.slack.client.conversations.members({
         channel: channelId,
         limit: 1000,
@@ -129,6 +132,9 @@ class SlackRepository {
       }
     }
 
+    if (nonCachedUserIds.length > 0) {
+      logTrace('slackRepository', 'getUserDetails', `Getting user details for ${nonCachedUserIds.join(', ')}`);
+    }
     const userDetailsResponse = await Promise.all(
       nonCachedUserIds.map((userId) => this.slack.client.users.info({ user: userId })),
     );
@@ -142,10 +148,12 @@ class SlackRepository {
   }
 
   async openUserConversation(userId: string): Promise<ConversationsOpenResponse> {
+    logTrace('slackRepository', 'openUserConversation', `Opening conversation with ${userId}`);
     return this.slack.client.conversations.open({ users: userId });
   }
 
   async inviteToChannel(userIds: string[], channelId: string) {
+    logTrace('slackRepository', 'inviteToChannel', `Inviting ${userIds.join(', ')} to ${channelId}`);
     await this.slack.client.conversations.invite({
       channel: channelId,
       users: userIds.join(','),
@@ -154,6 +162,7 @@ class SlackRepository {
 
   async sendMessage(userId: string, text: string) {
     const conversation = await this.openUserConversation(userId);
+    logTrace('slackRepository', 'sendMessage', `Sending message to ${userId}`);
     await this.slack.client.chat.postMessage({
       channel: conversation.channel!.id!,
       text,
@@ -201,6 +210,8 @@ class SlackRepository {
         },
       },
     ];
+
+    logTrace('slackRepository', 'sendMarkdown', `Sending markdown on ${channelId} with thread id ${threadId}`);
     const resp = await this.slack.client.chat.postMessage({
       channel: channelId,
       blocks,
@@ -218,6 +229,7 @@ class SlackRepository {
     text: string,
     threadId: string | undefined = undefined,
   ) {
+    logTrace('slackRepository', 'sendBlocks', `Sending blocks on ${channelId} with thread id ${threadId}`);
     return this.slack.client.chat.postMessage({
       channel: channelId,
       blocks,
@@ -228,6 +240,7 @@ class SlackRepository {
   }
 
   async sendEphemeralBlocks(channelId: string, userId: string, blocks: KnownBlock[], text: string) {
+    logTrace('slackRepository', 'sendEphemeralBlocks', `Sending ephemeral blocks to ${userId} on ${channelId}`);
     await this.slack.client.chat.postEphemeral({
       channel: channelId,
       user: userId,
@@ -239,6 +252,7 @@ class SlackRepository {
 
   async publishHomeView(userId: string, blocks: Block[]) {
     // Call views.publish with the built-in client
+    logTrace('slackRepository', 'publishHomeView', `Publishing home view for ${userId}`);
     await this.slack.client.views.publish({
       // Use the user ID associated with the event
       user_id: userId,

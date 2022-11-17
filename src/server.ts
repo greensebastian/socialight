@@ -3,6 +3,7 @@ import {
 } from '@slack/bolt';
 import { config as configDotenv } from 'dotenv';
 import { SecureContext } from 'tls';
+import { setup } from 'applicationinsights';
 import Config from './models/config';
 import FileRepository from './repositories/fileRepository';
 import EventService from './services/eventService';
@@ -28,6 +29,18 @@ const botAuthorInfo = {
 // eslint-disable-next-line import/prefer-default-export
 export function logTrace(userId: string, action: string, message: string) {
   console.log(`[${new Date().toISOString()}] ${userId}: ${action}: ${message}`);
+}
+
+if (process.env.APPLICATIONINSIGHTS_CONNECTION_STRING) {
+  if (process.env.APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL) {
+    delete process.env.APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL;
+  }
+  setup(process.env.APPLICATIONINSIGHTS_CONNECTION_STRING)
+    .setAutoCollectConsole(true, true)
+    .setAutoCollectExceptions(true)
+    .setAutoCollectRequests(true)
+    .setAutoDependencyCorrelation(true)
+    .start();
 }
 
 const slack = new App({
