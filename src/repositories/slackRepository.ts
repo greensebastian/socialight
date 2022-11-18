@@ -32,7 +32,7 @@ class SlackRepository {
       const conversationsResponse = await this.slack.client.conversations.list({
         types: 'public_channel,private_channel',
         exclude_archived: true,
-        limit: 500,
+        limit: 1000,
         cursor,
       });
       logTrace('slackRepository', 'getChannels', `Retrieved ${conversationsResponse.channels?.length} channels in batch`);
@@ -117,7 +117,7 @@ class SlackRepository {
       logTrace('slackRepository', 'getChannelMemberIds', `listing members in channel ${channelId}`);
       const usersResponse = await this.slack.client.conversations.members({
         channel: channelId,
-        limit: 500,
+        limit: 1000,
         cursor,
       });
       logTrace('slackRepository', 'getChannelMemberIds', `Retrieved ${usersResponse.members?.length} users in batch`);
