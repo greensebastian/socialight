@@ -35,6 +35,7 @@ class SlackRepository {
         limit: 500,
         cursor,
       });
+      logTrace('slackRepository', 'getChannels', `Retrieved ${conversationsResponse.channels?.length} channels in batch`);
 
       const newChannels = conversationsResponse.channels!;
 
@@ -119,6 +120,7 @@ class SlackRepository {
         limit: 500,
         cursor,
       });
+      logTrace('slackRepository', 'getChannelMemberIds', `Retrieved ${usersResponse.members?.length} users in batch`);
 
       usersResponse.members!.forEach((memberId: any) => memberIds.add(memberId));
       cursor = usersResponse.response_metadata!.next_cursor;
