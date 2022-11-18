@@ -74,7 +74,7 @@ class SlackService {
 
   private async announcementChannelId(poolChannelId: string) {
     if (!this.announcementChannelIdsByPoolChannelIdsCache.has(poolChannelId)) {
-      const channelPairs = await this.slackRepository.getChannels();
+      const channelPairs = await this.slackRepository.getParticipatingChannels();
       const channelPair = channelPairs.find((pair) => pair.poolChannel.id === poolChannelId);
       const announcementsChannel = channelPair?.announcementsChannel;
       if (announcementsChannel?.id) {

@@ -95,7 +95,7 @@ class SchedulingService {
   }
 
   private async planNewEvents() {
-    const channels = await this.slackRepository.getChannels();
+    const channels = await this.slackRepository.getParticipatingChannels();
     for (const channelPair of channels) {
       const event = await this.planningService.getNextEvent(channelPair.poolChannel.id!);
       if (!event) {

@@ -22,9 +22,7 @@ class SlackRepository {
     private botAuthorInfo: AuthorInfo,
   ) {}
 
-  async getChannels() {
-    const config = await this.configProvider.getConfig();
-
+  private async cacheChannelsFromSlack() {
     let moreToFetch = true;
     let channels: Channel[] = [];
     let cursor: string | undefined;
@@ -38,16 +36,30 @@ class SlackRepository {
         cursor,
       });
 
-      channels = channels.concat(conversationsResponse.channels!);
+      const newChannels = conversationsResponse.channels!;
+
+      for (const channel of newChannels) {
+        this.cachedChannels.set(channel.id!, channel);
+      }
+
+      channels = channels.concat(newChannels);
       cursor = conversationsResponse.response_metadata!.next_cursor;
       moreToFetch = !!cursor;
     }
 
+    logTrace('slackRepository', 'getChannels', `Retrieved ${channels.length} channels`);
+
+    return channels;
+  }
+
+  async getParticipatingChannels() {
+    const config = await this.configProvider.getConfig();
+
     const participatingChannels = [];
     for (const channelNamePair of config.channels) {
-      const poolChannel = channels.find((channel) => channelNamePair.poolChannel === channel.name!);
-      const announcementsChannel = channels
-        .find((channel) => channelNamePair.announcementsChannel === channel.name!);
+      const poolChannel = await this.getChannelByName(channelNamePair.poolChannel);
+      const announcementsChannel =
+        await this.getChannelByName(channelNamePair.announcementsChannel);
 
       if (poolChannel && announcementsChannel) {
         participatingChannels.push({
@@ -57,35 +69,34 @@ class SlackRepository {
       }
     }
 
-    for (const channelPair of participatingChannels) {
-      this.cachedChannels.set(channelPair.poolChannel.id!, channelPair.poolChannel);
-      this.cachedChannels
-        .set(channelPair.announcementsChannel.id!, channelPair.announcementsChannel);
-    }
-
     return participatingChannels;
   }
 
   async getChannelByName(name: string) {
-    const channelName = name.toLowerCase();
-    const config = await this.configProvider.getConfig();
-    const poolChannelNames = config.channels.map((channelPair) => channelPair.poolChannel);
-    if (!poolChannelNames.includes(channelName)) return undefined;
-
-    const cachedChannel = Array.from(this.cachedChannels.values()).find(
-      (channel) => channel.name?.toLowerCase() === channelName,
-    );
+    const cachedChannel = await this.getCachedChannelByName(name);
     if (cachedChannel) {
       return cachedChannel;
     }
+    await this.cacheChannelsFromSlack();
 
-    const channels = await this.getChannels();
-    const poolChannels = channels.map((channelPair) => channelPair.poolChannel);
-    return poolChannels.find((channel) => channel.name?.toLowerCase() === channelName);
+    return this.getCachedChannelByName(name);
+  }
+
+  private async getCachedChannelByName(name: string) {
+    const channelName = name.toLowerCase();
+    const config = await this.configProvider.getConfig();
+
+    const activeChannelNames = config.channels
+      .flatMap((channelPair) => [channelPair.poolChannel, channelPair.announcementsChannel]);
+    if (!activeChannelNames.includes(channelName)) return undefined;
+
+    return Array.from(this.cachedChannels.values()).find(
+      (channel) => channel.name?.toLowerCase() === channelName.toLowerCase(),
+    );
   }
 
   async getChannelById(channelId: string): Promise<Channel | undefined> {
-    if (!this.cachedChannels.has(channelId)) await this.getChannels();
+    if (!this.cachedChannels.has(channelId)) await this.cacheChannelsFromSlack();
     const channel = this.cachedChannels.get(channelId);
     return channel;
   }

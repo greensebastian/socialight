@@ -98,7 +98,7 @@ type Handler = (
 const channelsHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'channels') return false;
 
-  const channels = await slackRepository.getChannels();
+  const channels = await slackRepository.getParticipatingChannels();
   const channelPairText = channels.map((channelPair) =>
     `[#${channelPair.poolChannel.name}] -> [#${channelPair.announcementsChannel.name}]`);
 
@@ -112,7 +112,7 @@ const channelsHandler: Handler = async (text, say) => {
 const userHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'users') return false;
 
-  const channels = await slackRepository.getChannels();
+  const channels = await slackRepository.getParticipatingChannels();
   const firstChannel = channels[0].poolChannel;
   const users = await slackRepository.getUsersInChannel(firstChannel.id!);
   const userDetails = await slackRepository.getUsersDetails(users);
@@ -128,7 +128,7 @@ const userHandler: Handler = async (text, say) => {
 const planHandler: Handler = async (text, say) => {
   if (text.toLowerCase() !== 'plan') return false;
 
-  const channel = (await slackRepository.getChannels())[0].poolChannel;
+  const channel = (await slackRepository.getParticipatingChannels())[0].poolChannel;
   const event = await planningService.createEvent(channel.id!);
 
   const invitedUserIds = event!.invites.map((inv) => inv.userId);
