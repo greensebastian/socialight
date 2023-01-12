@@ -18,26 +18,51 @@ const getUsersMd = (userIds: string[]): string => {
 };
 const getDateMd = (date: Date) => `*${dateFormat(date)}*`;
 
-export const getInvitationText = (channelId: string, date: Date) =>
-  `You've been invited to have pizza with ${getChannelMd(channelId)} on ${getDateMd(date)} :pizza: \n\nRespond by accepting or declining!`;
+export const getInvitationText = (channelId: string, date: Date, participantCount: number) =>
+  `You've been invited to have pizza with ${participantCount - 1} others from ${getChannelMd(channelId)} on ${getDateMd(date)} :pizza:\n\n*This invite will expire in 24 hours!*\n\nRespond by accepting or declining!`;
 
-export const getInvitationTextBlock = (channelId: string, date: Date) => ({
+export const getInvitationTextBlock = (
+  channelId: string,
+  date: Date,
+  participantCount: number,
+) => ({
   blocks: [
     {
       type: 'section',
       fields: [
         {
           type: 'mrkdwn',
-          text: getInvitationText(channelId, date),
+          text: getInvitationText(channelId, date, participantCount),
         },
       ],
     } as SectionBlock,
   ],
 });
 
-export const getInvitationBlock = (channelId: string, date: Date, eventId: string) => ({
+const getWhatIsThisText = (participantCount: number) => `*What is this?*\n\nSocialight is a bot which tries to create new connections in Netlight through our shared love of pizza. It randomly selects ${participantCount} members of a specific channel, and individually invites them to pizza on a specific date. Once enough participants accept their invites, the group is announced and self-organize a dinner together.`;
+
+export const getWhatIsThisTextBlock = (participantCount: number) => ({
   blocks: [
-    ...getInvitationTextBlock(channelId, date).blocks,
+    {
+      type: 'section',
+      fields: [
+        {
+          type: 'mrkdwn',
+          text: getWhatIsThisText(participantCount),
+        },
+      ],
+    } as SectionBlock,
+  ],
+});
+
+export const getInvitationBlock = (
+  channelId: string,
+  date: Date,
+  eventId: string,
+  participantCount: number,
+) => ({
+  blocks: [
+    ...getInvitationTextBlock(channelId, date, participantCount).blocks,
     {
       type: 'actions',
       block_id: `invite_actions_${eventId}`,
@@ -63,8 +88,9 @@ export const getInvitationBlock = (channelId: string, date: Date, eventId: strin
         },
       ],
     } as ActionsBlock,
+    ...getWhatIsThisTextBlock(participantCount).blocks,
   ],
-  text: getInvitationText(channelId, date),
+  text: getInvitationText(channelId, date, participantCount),
 });
 
 export const getReminderText = (channelId: string, date: Date) =>
@@ -124,7 +150,9 @@ export const getAnnouncementBlock = (
       fields: [
         {
           type: 'mrkdwn',
-          text: `On ${getDateMd(date)}, ${getUsersMd(userIds)} from ${getChannelMd(channelId)} will get together for pizza.
+          text: `On ${getDateMd(date)}, ${getUsersMd(userIds)} from ${getChannelMd(
+            channelId,
+          )} will get together for pizza.
 ${getUserMd(reservationUser)} will make the reservation for the group.
 ${getUserMd(expenseUser)} will expense the pizza afterwards.
 The rest will show up and have a good time :partying_face:`,
@@ -186,9 +214,9 @@ export const getExpireResponseBlock = (channelId: string, date: Date) => ({
       fields: [
         {
           type: 'mrkdwn',
-          text: `Your invite for pizza with ${getChannelMd(
-            channelId,
-          )} on ${getDateMd(date)} has *expired*. Hope to see you some other time!`,
+          text: `Your invite for pizza with ${getChannelMd(channelId)} on ${getDateMd(
+            date,
+          )} has *expired*. Hope to see you some other time!`,
         },
       ],
     } as SectionBlock,
@@ -254,6 +282,7 @@ export const getHomeBlock = (
   invited: Event[],
   accepted: Event[],
   declined: Event[],
+  participantCount: number,
 ) => ({
   blocks: [
     {
@@ -302,19 +331,26 @@ export const getHomeBlock = (
     {
       type: 'divider',
     } as DividerBlock,
-    ...invited.flatMap((ev) => getInvitationTextBlock(ev.channelId, ev.time).blocks),
-    ...accepted.filter((ev) => ev.announced).flatMap((ev) => getAnnouncementBlock(
-      ev.accepted,
-      ev.reservationUser!,
-      ev.expenseUser!,
-      ev.time,
-      ev.channelId,
-    ).blocks),
-    ...accepted.filter((ev) => !ev.announced).flatMap((ev) => getAcceptResponseBlock(
-      ev.channelId,
-      ev.time,
-    ).blocks),
+    ...invited.flatMap(
+      (ev) => getInvitationTextBlock(ev.channelId, ev.time, participantCount).blocks,
+    ),
+    ...accepted
+      .filter((ev) => ev.announced)
+      .flatMap(
+        (ev) =>
+          getAnnouncementBlock(
+            ev.accepted,
+            ev.reservationUser!,
+            ev.expenseUser!,
+            ev.time,
+            ev.channelId,
+          ).blocks,
+      ),
+    ...accepted
+      .filter((ev) => !ev.announced)
+      .flatMap((ev) => getAcceptResponseBlock(ev.channelId, ev.time).blocks),
     ...declined.flatMap((ev) => getDeclineResponseBlock(ev.channelId, ev.time).blocks),
+    ...getWhatIsThisTextBlock(participantCount).blocks,
   ],
   text: '',
 });

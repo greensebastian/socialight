@@ -24,7 +24,8 @@ class SlackService {
   ) { }
 
   async sendInvite(invite: Invite, channelId: string, date: Date, eventId: string) {
-    const message = getInvitationBlock(channelId, date, eventId);
+    const config = await this.configRepository.getConfig();
+    const message = getInvitationBlock(channelId, date, eventId, config.participants);
     return this.slackRepository.sendBlocksToUser(
       invite.userId,
       message.blocks,
@@ -112,6 +113,7 @@ class SlackService {
   }
 
   async refreshHomeScreen(userId: string, events: Event[]) {
+    const config = await this.configRepository.getConfig();
     const userOptedOut = (await this.stateRepository.getOptedOut()).includes(userId);
 
     const accepted = events.filter((ev) => EventUtil.hasAccepted(ev, userId));
@@ -120,7 +122,7 @@ class SlackService {
 
     await this.slackRepository.publishHomeView(
       userId,
-      getHomeBlock(userOptedOut, invited, accepted, declined).blocks,
+      getHomeBlock(userOptedOut, invited, accepted, declined, config.participants).blocks,
     );
   }
 }
