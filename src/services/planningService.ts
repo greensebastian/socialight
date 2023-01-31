@@ -142,10 +142,10 @@ class PlanningService {
     const usersInChannel = await this.slackRepository.getUsersInChannel(channelId);
 
     const usersToIgnore = [...pending, ...accepted, ...declined, ...optedOut];
-    const availableToAdd = usersInChannel.filter((user) => !usersToIgnore.includes(user));
+    const availableToAddSorted = usersInChannel.filter((user) => !usersToIgnore.includes(user));
     const maxParticipants = (await this.configRepository.getConfig()).participants;
 
-    this.randomService.shuffleArray(availableToAdd);
+    const availableToAdd = this.randomService.shuffleArray(availableToAddSorted);
 
     const alreadyAdded = (event?.invites.length || 0) + (event?.accepted.length || 0);
 
